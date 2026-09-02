@@ -47,7 +47,7 @@ RUN set -eux; \
     chown -R "${USER_UID}:${USER_GID}" "/home/${USERNAME}"
 
 USER ${USERNAME}
-WORKDIR /workspace
+WORKDIR /workspaces/piovra
 
 # The Maven cache lives on a volume: see devcontainer.json
 ENV MAVEN_OPTS="-Dmaven.repo.local=/home/${USERNAME}/.m2/repository"

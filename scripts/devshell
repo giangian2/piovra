@@ -29,7 +29,7 @@ TTY_FLAGS=()
 
 exec docker run --rm "${TTY_FLAGS[@]}" \
   --name "piovra-devshell-$$" \
-  -v "${ROOT}:/workspace" \
+  -v "${ROOT}:/workspaces/piovra" \
   -v piovra-m2:/home/piovra/.m2 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   "${GROUP_ARGS[@]}" \
@@ -41,6 +41,6 @@ exec docker run --rm "${TTY_FLAGS[@]}" \
   -e REDIS_URL=redis://host.docker.internal:6379 \
   -e S3_ENDPOINT=http://host.docker.internal:9000 \
   -p 8080:8080 -p 8081:8081 -p 8082:8082 -p 8083:8083 \
-  -w /workspace \
+  -w /workspaces/piovra \
   "${IMAGE}" \
   "${@:-bash}"

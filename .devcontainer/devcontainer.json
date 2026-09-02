@@ -5,11 +5,10 @@
   },
   "remoteUser": "piovra",
 
-  // The default mount point is /workspaces/<repo>. It is pinned to /workspace so the path is
-  // identical under scripts/devshell: absolute paths end up inside target/ and in IDE
-  // configuration, and having two of them for the same repository is a needless difference.
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
-  "workspaceFolder": "/workspace",
+  // No workspaceMount override on purpose: the tool's own default (/workspaces/<repo>) is used,
+  // and scripts/devshell matches it. On WSL the local path has to be translated from a Windows
+  // UNC path, and that is not a translation worth taking over just to rename a directory.
+  "workspaceFolder": "/workspaces/piovra",
 
   "mounts": [
     // The Maven cache survives container rebuilds.

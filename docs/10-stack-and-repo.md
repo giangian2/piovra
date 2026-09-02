@@ -146,8 +146,10 @@ differs on every machine, so it cannot be hardcoded anywhere. Each path resolves
 container's docker group onto it, which its terminals pick up because devcontainer sessions are
 spawned with `docker exec`, and that re-resolves group membership from `/etc/group` every time.
 
-Both mount the workspace at the same `/workspace` path: absolute paths leak into `target/` and into
-IDE configuration, and having two of them for one repository is a needless difference.
+Both mount the workspace at `/workspaces/piovra`, the devcontainer tooling's own default. Absolute
+paths leak into `target/` and into IDE configuration, so the two entry points must agree — and the
+agreement follows the tool's convention rather than overriding it: on WSL the local path has to be
+translated from a Windows UNC path, and that is not a translation worth taking over.
 
 The compose file creates **one Postgres schema and user per service module**
 (`postgres-init.sql`), each granted only on its own schema: the "no cross-service joins" rule fails

@@ -162,7 +162,7 @@ docker compose -f deploy/local/docker-compose.yml up -d   # kafka, postgres, red
 ### With the devcontainer
 
 Open the folder in VS Code and accept "Reopen in Container". You get JDK 25, the workspace at the
-same `/workspace` path `devshell` uses, a Maven cache on a volume, and the environment already
+same `/workspaces/piovra` path `devshell` uses, a Maven cache on a volume, and the environment already
 pointed at the local infrastructure. Testcontainers works: a `postStartCommand` moves the
 container's docker group onto the host socket's gid, which the terminals pick up because
 devcontainer sessions are spawned with `docker exec` and it re-resolves group membership.
