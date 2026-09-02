@@ -122,18 +122,27 @@ property of the repository rather than of whoever opens it.
 
 | Where | What | File |
 |---|---|---|
-| Development | JDK 25 devcontainer, Docker for Testcontainers, Maven cache on a volume | `.devcontainer/` |
-| Build without the devcontainer | a wrapper running Maven in a JDK 25 container | `scripts/mvnd` |
+| Development shell | a shell in the JDK 25 image, workspace mounted, host Docker gid resolved at run time | `scripts/devshell` |
+| One-off Maven command | a thin wrapper over `devshell`, so both share one image, user and cache volume | `scripts/mvnd` |
+| IDE integration | JDK 25 devcontainer, Maven cache on a volume | `.devcontainer/` |
 | CI | `actions/setup-java` with temurin 25 | `.github/workflows/ci.yml` |
 | Runtime | multi-stage: build on `temurin:25-jdk`, run on `temurin:25-jre` | `deploy/Dockerfile` |
 | Infrastructure | Kafka KRaft, Postgres, Redis, MinIO, WireMock, Kafka UI | `deploy/local/docker-compose.yml` |
 
 ```bash
 docker compose -f deploy/local/docker-compose.yml up -d
-./mvnw clean install            # inside the devcontainer
-./scripts/mvnd clean install    # or, from a host without a JDK 25
-./mvnw -pl apps/piovra-core spring-boot:run
+./scripts/devshell              # shell in the container, then ./mvnw as usual
+./scripts/mvnd clean install    # or a single Maven command
+./mvnw clean install            # if the host already has a JDK 25
 ```
+
+The base image is pinned to `eclipse-temurin:25-jdk-noble` (Ubuntu 24.04 LTS) rather than the
+floating `:25-jdk` tag: the latter currently resolves to Ubuntu 26.04, which is newer than parts of
+the tooling ecosystem, and a floating base makes the build a moving target.
+
+Reaching the host's Docker daemon from inside a container is a group-id question, and that gid
+differs on every machine. `scripts/devshell` reads it at run time and passes `--group-add`;
+`devcontainer.json` cannot, which is why Testcontainers runs should go through `devshell`.
 
 The compose file creates **one Postgres schema and user per service module**
 (`postgres-init.sql`), each granted only on its own schema: the "no cross-service joins" rule fails

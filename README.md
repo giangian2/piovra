@@ -144,27 +144,33 @@ a message that says how to get the right one.
 
 The same Java major applies everywhere: devcontainer, CI, runtime images.
 
-### With the devcontainer (recommended)
+### A shell in the development container (simplest)
 
-Open the folder in VS Code (or any compatible IDE) and accept "Reopen in Container": `.devcontainer/`
-provides JDK 25, Docker for Testcontainers, a Maven cache on a volume, and the environment variables
-already pointed at the local infrastructure.
+No IDE integration required. `scripts/devshell` builds the image from `.devcontainer/Dockerfile`,
+mounts the workspace, and reads the host's Docker group id at run time so Testcontainers can reach
+the daemon.
 
 ```bash
 docker compose -f deploy/local/docker-compose.yml up -d   # kafka, postgres, redis, minio, wiremock
-./mvnw clean install
-./mvnw -pl apps/piovra-core spring-boot:run
-```
 
-### Without the devcontainer
-
-If the host already has a JDK 25, `./mvnw` is enough. Otherwise the build runs in a container:
-
-```bash
-./scripts/mvnd clean install                        # full build plus tests, on JDK 25
+./scripts/devshell                                  # interactive shell, then use ./mvnw normally
+./scripts/mvnd clean install                        # or run one Maven command and exit
 ./scripts/mvnd -pl services/piovra-publication test # just the diff engine
 ./scripts/mvnd spotless:apply                       # format before committing
 ```
+
+### With the devcontainer
+
+Open the folder in VS Code and accept "Reopen in Container". You get JDK 25, the workspace, a Maven
+cache on a volume and the environment already pointed at the local infrastructure.
+
+One caveat: access to the host's Docker socket is a group-id question, and that gid differs on every
+machine, so it cannot be baked into `devcontainer.json`. If Testcontainers reports a permission error
+on the socket, run those tests through `./scripts/devshell`, which handles it.
+
+### With a local JDK 25
+
+If the host already has one, `./mvnw` works directly — no container involved.
 
 Kafka UI on :8090, MinIO on :9001, WireMock on :8089.
 

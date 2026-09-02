@@ -9,7 +9,10 @@
   "mounts": [
     // The Maven cache survives container rebuilds.
     "source=piovra-m2,target=/home/piovra/.m2,type=volume",
-    // The host's Docker: Testcontainers run beside the devcontainer, not inside it.
+    // The host's Docker daemon, for Testcontainers. Note that access to it is a group-id
+    // question and that gid differs on every machine, so it cannot be baked in here.
+    // If Testcontainers reports "permission denied" on the socket, use ./scripts/devshell,
+    // which reads the host gid at run time and passes --group-add.
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
 
@@ -41,11 +44,11 @@
       ],
       "settings": {
         "java.configuration.updateBuildConfiguration": "automatic",
-        "java.format.settings.url": ".devcontainer/eclipse-format.xml",
         "files.trimTrailingWhitespace": true
       }
     }
   },
 
-  "postCreateCommand": "./mvnw -B -q dependency:go-offline || true"
+  // The Maven cache volume may carry root-owned files from an earlier run.
+  "postCreateCommand": "sudo chown -R piovra:piovra /home/piovra/.m2 || true"
 }

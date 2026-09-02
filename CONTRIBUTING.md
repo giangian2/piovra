@@ -6,14 +6,20 @@ the rules lives in [docs/12-development-guidelines.md](docs/12-development-guide
 ## Getting set up
 
 The project requires **JDK 25** ([why](docs/10-stack-and-repo.md#1-stack)). You do not need to
-install it: open the repository in the devcontainer (`.devcontainer/`), or build in a container with
-`./scripts/mvnd`.
+install it — the repository brings its own environment:
 
 ```bash
 docker compose -f deploy/local/docker-compose.yml up -d   # kafka, postgres, redis, minio, wiremock
-./mvnw clean install          # inside the devcontainer
-./scripts/mvnd clean install  # from a host without a JDK 25
+
+./scripts/devshell            # a shell in the JDK 25 container, then ./mvnw as usual
+./scripts/mvnd clean install  # or one Maven command in that container and exit
+./mvnw clean install          # if your host already has a JDK 25
 ```
+
+Opening the folder in VS Code and choosing "Reopen in Container" also works. Note that reaching the
+host Docker socket from inside a container is a group-id matter and that gid differs per machine, so
+if Testcontainers reports a permission error, run those tests via `./scripts/devshell`, which reads
+the host gid at run time.
 
 ## Before opening a pull request
 
