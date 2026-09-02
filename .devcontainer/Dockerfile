@@ -40,6 +40,7 @@ RUN set -eux; \
         groupadd --gid "${USER_GID}" "${USERNAME}"; \
         useradd --uid "${USER_UID}" --gid "${USER_GID}" -m -s /bin/bash "${USERNAME}"; \
     fi; \
+    usermod -aG docker "${USERNAME}"; \
     echo "${USERNAME} ALL=(root) NOPASSWD:ALL" > "/etc/sudoers.d/${USERNAME}"; \
     chmod 0440 "/etc/sudoers.d/${USERNAME}"; \
     mkdir -p "/home/${USERNAME}/.m2"; \

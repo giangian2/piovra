@@ -16,10 +16,8 @@ docker compose -f deploy/local/docker-compose.yml up -d   # kafka, postgres, red
 ./mvnw clean install          # if your host already has a JDK 25
 ```
 
-Opening the folder in VS Code and choosing "Reopen in Container" also works. Note that reaching the
-host Docker socket from inside a container is a group-id matter and that gid differs per machine, so
-if Testcontainers reports a permission error, run those tests via `./scripts/devshell`, which reads
-the host gid at run time.
+Opening the folder in VS Code and choosing "Reopen in Container" also works, Testcontainers
+included.
 
 ## Before opening a pull request
 

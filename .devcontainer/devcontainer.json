@@ -4,15 +4,18 @@
     "dockerfile": "Dockerfile"
   },
   "remoteUser": "piovra",
+
+  // The default mount point is /workspaces/<repo>. It is pinned to /workspace so the path is
+  // identical under scripts/devshell: absolute paths end up inside target/ and in IDE
+  // configuration, and having two of them for the same repository is a needless difference.
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
 
   "mounts": [
     // The Maven cache survives container rebuilds.
     "source=piovra-m2,target=/home/piovra/.m2,type=volume",
-    // The host's Docker daemon, for Testcontainers. Note that access to it is a group-id
-    // question and that gid differs on every machine, so it cannot be baked in here.
-    // If Testcontainers reports "permission denied" on the socket, use ./scripts/devshell,
-    // which reads the host gid at run time and passes --group-add.
+    // The host's Docker daemon, for Testcontainers. Access to it is settled by
+    // postStartCommand below.
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
 
@@ -50,5 +53,12 @@
   },
 
   // The Maven cache volume may carry root-owned files from an earlier run.
-  "postCreateCommand": "sudo chown -R piovra:piovra /home/piovra/.m2 || true"
+  "postCreateCommand": "sudo chown -R piovra:piovra /home/piovra/.m2 || true",
+
+  // Reaching the host's Docker socket is a group-id question, and that gid differs on every
+  // machine, so it cannot be hardcoded. It is read here and the container's docker group is
+  // moved onto it (-o allows a collision with an existing group). This works because the
+  // devcontainer's terminals are spawned with docker exec, which re-resolves the user's
+  // groups from /etc/group on every session - a groupmod after start is therefore picked up.
+  "postStartCommand": "if [ -S /var/run/docker.sock ]; then sudo groupmod -o -g \"$(stat -c %g /var/run/docker.sock)\" docker; fi"
 }

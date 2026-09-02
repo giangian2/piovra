@@ -141,8 +141,13 @@ floating `:25-jdk` tag: the latter currently resolves to Ubuntu 26.04, which is 
 the tooling ecosystem, and a floating base makes the build a moving target.
 
 Reaching the host's Docker daemon from inside a container is a group-id question, and that gid
-differs on every machine. `scripts/devshell` reads it at run time and passes `--group-add`;
-`devcontainer.json` cannot, which is why Testcontainers runs should go through `devshell`.
+differs on every machine, so it cannot be hardcoded anywhere. Each path resolves it at run time:
+`scripts/devshell` reads it and passes `--group-add`; the devcontainer's `postStartCommand` moves the
+container's docker group onto it, which its terminals pick up because devcontainer sessions are
+spawned with `docker exec`, and that re-resolves group membership from `/etc/group` every time.
+
+Both mount the workspace at the same `/workspace` path: absolute paths leak into `target/` and into
+IDE configuration, and having two of them for one repository is a needless difference.
 
 The compose file creates **one Postgres schema and user per service module**
 (`postgres-init.sql`), each granted only on its own schema: the "no cross-service joins" rule fails
