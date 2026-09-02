@@ -1,16 +1,18 @@
 package dev.piovra.crosscutting;
 
-import dev.piovra.crosscutting.aspect.AuditAspect;
-import dev.piovra.crosscutting.aspect.ChannelCallAspect;
-import dev.piovra.crosscutting.aspect.IdempotencyAspect;
-import dev.piovra.crosscutting.port.AuditSink;
-import dev.piovra.crosscutting.port.IdempotencyStore;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
+import dev.piovra.crosscutting.aspect.AuditAspect;
+import dev.piovra.crosscutting.aspect.ChannelCallAspect;
+import dev.piovra.crosscutting.aspect.IdempotencyAspect;
+import dev.piovra.crosscutting.port.AuditSink;
+import dev.piovra.crosscutting.port.IdempotencyStore;
+
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * Registers the aspects when the ports they need are available.

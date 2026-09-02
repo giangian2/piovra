@@ -2,6 +2,12 @@ package dev.piovra.driver.tck;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
+import java.util.List;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import dev.piovra.common.ErrorClass;
 import dev.piovra.driver.spi.ChannelContext;
 import dev.piovra.driver.spi.DriverCapabilities;
@@ -14,10 +20,6 @@ import dev.piovra.driver.spi.OrderPage;
 import dev.piovra.driver.spi.OrderQuery;
 import dev.piovra.driver.spi.UpdateResult;
 import dev.piovra.driver.spi.UpsertResult;
-import java.time.Instant;
-import java.util.List;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 /**
  * The contract test every driver must pass.
@@ -97,8 +99,7 @@ public abstract class MarketplaceDriverContractTest {
         ListingRequest request = newListingRequest();
         UpsertResult created = driver().upsertListing(context(), request);
 
-        UpdateResult result = driver()
-                .updateInventory(
+        UpdateResult result = driver().updateInventory(
                         context(),
                         List.of(new InventoryUpdate(
                                 request.product().variants().getFirst().sku(), created.externalId(), null, 5)));
@@ -111,7 +112,8 @@ public abstract class MarketplaceDriverContractTest {
     @Test
     @DisplayName("fetchOrders: pages repeatably and never returns null")
     void fetch_orders_pagination() {
-        OrderPage page = driver().fetchOrders(context(), OrderQuery.since(Instant.now().minusSeconds(3600), 50));
+        OrderPage page =
+                driver().fetchOrders(context(), OrderQuery.since(Instant.now().minusSeconds(3600), 50));
 
         assertThat(page).isNotNull();
         assertThat(page.orders()).isNotNull();

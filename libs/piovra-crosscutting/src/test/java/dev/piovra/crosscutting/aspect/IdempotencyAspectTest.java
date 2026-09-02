@@ -3,15 +3,17 @@ package dev.piovra.crosscutting.aspect;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.piovra.crosscutting.annotation.Idempotent;
-import dev.piovra.crosscutting.port.IdempotencyStore;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
+
+import dev.piovra.crosscutting.annotation.Idempotent;
+import dev.piovra.crosscutting.port.IdempotencyStore;
 
 /**
  * The aspect is tested with a hand-built AspectJ proxy: no Spring context, tests in milliseconds.

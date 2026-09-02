@@ -1,9 +1,10 @@
 package dev.piovra.model.product;
 
-import dev.piovra.common.Money;
-import dev.piovra.common.Sku;
 import java.util.List;
 import java.util.Map;
+
+import dev.piovra.common.Money;
+import dev.piovra.common.Sku;
 
 /**
  * The unit actually being sold. Price and stock live here: a product without variants has a single

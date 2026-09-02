@@ -1,13 +1,14 @@
 package dev.piovra.publication.domain;
 
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+
 import dev.piovra.events.ChannelCommand;
 import dev.piovra.events.CommandPriority;
 import dev.piovra.model.channel.ChannelPolicy;
 import dev.piovra.model.channel.FieldGroup;
 import dev.piovra.model.product.CanonicalProduct;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Decides whether and what to publish. This is the class that determines the system's real

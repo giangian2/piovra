@@ -1,8 +1,9 @@
 package dev.piovra.driver.spi;
 
-import dev.piovra.common.ErrorClass;
 import java.time.Duration;
 import java.util.Optional;
+
+import dev.piovra.common.ErrorClass;
 
 /**
  * An error translated into the canonical taxonomy.

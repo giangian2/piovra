@@ -1,5 +1,10 @@
 package dev.piovra.publication.domain;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+
 import dev.piovra.common.Money;
 import dev.piovra.common.Sku;
 import dev.piovra.model.channel.ChannelDefinition;
@@ -8,10 +13,6 @@ import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.model.product.CanonicalVariant;
 import dev.piovra.model.product.ChannelOverride;
 import dev.piovra.model.product.LocalizedText;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Projects the canonical product onto a channel.
@@ -27,7 +28,8 @@ public final class ChannelProjector {
         this.locale = locale;
     }
 
-    public DesiredListing project(CanonicalProduct product, ChannelDefinition channel, Map<Sku, Integer> availableBySku) {
+    public DesiredListing project(
+            CanonicalProduct product, ChannelDefinition channel, Map<Sku, Integer> availableBySku) {
 
         ChannelOverride override = product.overrideFor(channel.channelId()).orElse(null);
         ChannelPolicy policy = channel.policy();
@@ -39,9 +41,10 @@ public final class ChannelProjector {
                 .or(() -> channel.resolveCategory(product.categoryPath()))
                 .orElse(null);
 
-        Map<String, String> attributes = override == null || override.attributes().isEmpty()
-                ? product.attributes()
-                : merge(product.attributes(), override.attributes());
+        Map<String, String> attributes =
+                override == null || override.attributes().isEmpty()
+                        ? product.attributes()
+                        : merge(product.attributes(), override.attributes());
 
         List<DesiredListing.DesiredVariant> variants = product.variants().stream()
                 .map(v -> projectVariant(v, override, policy, availableBySku.getOrDefault(v.sku(), 0)))

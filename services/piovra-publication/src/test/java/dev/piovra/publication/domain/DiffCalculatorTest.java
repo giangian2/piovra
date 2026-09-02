@@ -2,6 +2,14 @@ package dev.piovra.publication.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Money;
 import dev.piovra.common.Sku;
@@ -18,12 +26,6 @@ import dev.piovra.model.product.Identifiers;
 import dev.piovra.model.product.LocalizedText;
 import dev.piovra.model.product.ProductStatus;
 import dev.piovra.model.product.ProductType;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
 
 /**
  * The diff is the logic the system's throughput rests on: these tests do not check that it

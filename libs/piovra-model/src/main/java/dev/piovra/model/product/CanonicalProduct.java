@@ -1,12 +1,13 @@
 package dev.piovra.model.product;
 
-import dev.piovra.common.ChannelId;
-import dev.piovra.common.Sku;
-import dev.piovra.common.TenantId;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import dev.piovra.common.ChannelId;
+import dev.piovra.common.Sku;
+import dev.piovra.common.TenantId;
 
 /**
  * The canonical product: source of truth, independent of any marketplace

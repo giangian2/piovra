@@ -1,9 +1,10 @@
 package dev.piovra.model.channel;
 
-import dev.piovra.common.ChannelId;
-import dev.piovra.common.TenantId;
 import java.util.Map;
 import java.util.Optional;
+
+import dev.piovra.common.ChannelId;
+import dev.piovra.common.TenantId;
 
 /**
  * A channel as the downstream services see it. Credentials are NOT here: only the Vault reference,

@@ -1,10 +1,11 @@
 package dev.piovra.driver.spi;
 
-import dev.piovra.model.channel.FieldGroup;
-import dev.piovra.model.product.CanonicalProduct;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import dev.piovra.model.channel.FieldGroup;
+import dev.piovra.model.product.CanonicalProduct;
 
 /**
  * A publish request. It carries the product already projected onto the channel (overrides and

@@ -1,7 +1,8 @@
 package dev.piovra.events;
 
-import dev.piovra.common.TenantId;
 import java.time.Instant;
+
+import dev.piovra.common.TenantId;
 
 /**
  * Base of every event. The partition key is part of the event's contract, not a producer's choice:

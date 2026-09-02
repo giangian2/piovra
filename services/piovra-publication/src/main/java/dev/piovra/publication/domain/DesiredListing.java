@@ -1,11 +1,12 @@
 package dev.piovra.publication.domain;
 
+import java.util.List;
+import java.util.Map;
+
 import dev.piovra.common.Money;
 import dev.piovra.common.Sku;
 import dev.piovra.model.product.Dimensions;
 import dev.piovra.model.product.Media;
-import java.util.List;
-import java.util.Map;
 
 /**
  * What we want the channel to show: canonical product plus overrides, policy and category mapping,

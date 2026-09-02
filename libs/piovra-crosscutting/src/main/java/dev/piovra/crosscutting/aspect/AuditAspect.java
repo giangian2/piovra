@@ -1,13 +1,15 @@
 package dev.piovra.crosscutting.aspect;
 
-import dev.piovra.crosscutting.MdcKeys;
-import dev.piovra.crosscutting.annotation.Audited;
-import dev.piovra.crosscutting.port.AuditSink;
 import java.time.Instant;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.MDC;
+
+import dev.piovra.crosscutting.MdcKeys;
+import dev.piovra.crosscutting.annotation.Audited;
+import dev.piovra.crosscutting.port.AuditSink;
 
 /**
  * Writes the actions annotated with {@link Audited} into the audit log.

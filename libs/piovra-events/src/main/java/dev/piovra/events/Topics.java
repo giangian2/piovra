@@ -1,7 +1,8 @@
 package dev.piovra.events;
 
-import dev.piovra.model.channel.ChannelType;
 import java.util.Locale;
+
+import dev.piovra.model.channel.ChannelType;
 
 /**
  * Topic names in a single place. Convention: piovra.&lt;domain&gt;.&lt;entity&gt;.&lt;verb&gt;.v&lt;n&gt;

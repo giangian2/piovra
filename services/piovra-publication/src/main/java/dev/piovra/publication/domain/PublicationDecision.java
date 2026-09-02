@@ -1,9 +1,10 @@
 package dev.piovra.publication.domain;
 
+import java.util.Set;
+
 import dev.piovra.events.ChannelCommand;
 import dev.piovra.events.CommandPriority;
 import dev.piovra.model.channel.FieldGroup;
-import java.util.Set;
 
 /**
  * What to do for a product on a channel.

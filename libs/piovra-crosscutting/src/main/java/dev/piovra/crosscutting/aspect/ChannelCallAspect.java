@@ -1,16 +1,19 @@
 package dev.piovra.crosscutting.aspect;
 
-import dev.piovra.crosscutting.MdcKeys;
-import dev.piovra.crosscutting.annotation.ChannelCall;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import dev.piovra.crosscutting.MdcKeys;
+import dev.piovra.crosscutting.annotation.ChannelCall;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 /**
  * Instruments calls to marketplace APIs.

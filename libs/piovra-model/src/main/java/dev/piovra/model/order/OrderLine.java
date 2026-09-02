@@ -1,8 +1,9 @@
 package dev.piovra.model.order;
 
+import java.util.Optional;
+
 import dev.piovra.common.Money;
 import dev.piovra.common.Sku;
-import java.util.Optional;
 
 public record OrderLine(
         String lineId,

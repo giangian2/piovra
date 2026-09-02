@@ -1,8 +1,9 @@
 package dev.piovra.driver.spi;
 
-import dev.piovra.model.channel.ChannelType;
 import java.util.List;
 import java.util.Optional;
+
+import dev.piovra.model.channel.ChannelType;
 
 /**
  * Contract of a marketplace driver.

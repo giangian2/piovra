@@ -1,12 +1,13 @@
 package dev.piovra.publication.domain;
 
+import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
+
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Sku;
 import dev.piovra.common.TenantId;
 import dev.piovra.model.channel.FieldGroup;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * The memory of what has been published on a channel for a product. This is the heart of the
@@ -42,8 +43,20 @@ public record ChannelListing(
 
     public static ChannelListing notListed(TenantId tenant, Sku sku, ChannelId channelId) {
         return new ChannelListing(
-                tenant, sku, channelId, null, Map.of(), ListingState.NOT_LISTED, 0L, Map.of(), null, null, null, 0,
-                null, null);
+                tenant,
+                sku,
+                channelId,
+                null,
+                Map.of(),
+                ListingState.NOT_LISTED,
+                0L,
+                Map.of(),
+                null,
+                null,
+                null,
+                0,
+                null,
+                null);
     }
 
     public boolean isPublished() {
@@ -64,8 +77,20 @@ public record ChannelListing(
 
     public ChannelListing markPending(String commandId, Instant now) {
         return new ChannelListing(
-                tenantId, sku, channelId, externalId, externalVariantIds, ListingState.PENDING, publishedRevision,
-                fieldHashes, commandId, lastErrorCode, lastErrorMessage, retryCount, now, lastSuccessAt);
+                tenantId,
+                sku,
+                channelId,
+                externalId,
+                externalVariantIds,
+                ListingState.PENDING,
+                publishedRevision,
+                fieldHashes,
+                commandId,
+                lastErrorCode,
+                lastErrorMessage,
+                retryCount,
+                now,
+                lastSuccessAt);
     }
 
     public ChannelListing markPublished(
@@ -93,20 +118,56 @@ public record ChannelListing(
 
     public ChannelListing markError(String code, String message, Instant now) {
         return new ChannelListing(
-                tenantId, sku, channelId, externalId, externalVariantIds, ListingState.ERROR, publishedRevision,
-                fieldHashes, lastCommandId, code, message, retryCount + 1, now, lastSuccessAt);
+                tenantId,
+                sku,
+                channelId,
+                externalId,
+                externalVariantIds,
+                ListingState.ERROR,
+                publishedRevision,
+                fieldHashes,
+                lastCommandId,
+                code,
+                message,
+                retryCount + 1,
+                now,
+                lastSuccessAt);
     }
 
     public ChannelListing markBlocked(String reason, Instant now) {
         return new ChannelListing(
-                tenantId, sku, channelId, externalId, externalVariantIds, ListingState.BLOCKED, publishedRevision,
-                fieldHashes, lastCommandId, "BLOCKED_BY_RULE", reason, retryCount, now, lastSuccessAt);
+                tenantId,
+                sku,
+                channelId,
+                externalId,
+                externalVariantIds,
+                ListingState.BLOCKED,
+                publishedRevision,
+                fieldHashes,
+                lastCommandId,
+                "BLOCKED_BY_RULE",
+                reason,
+                retryCount,
+                now,
+                lastSuccessAt);
     }
 
     /** Clears the hashes so the next diff produces a full publish (forced resync). */
     public ChannelListing forgetSnapshot() {
         return new ChannelListing(
-                tenantId, sku, channelId, externalId, externalVariantIds, state, publishedRevision, Map.of(),
-                lastCommandId, lastErrorCode, lastErrorMessage, retryCount, lastAttemptAt, lastSuccessAt);
+                tenantId,
+                sku,
+                channelId,
+                externalId,
+                externalVariantIds,
+                state,
+                publishedRevision,
+                Map.of(),
+                lastCommandId,
+                lastErrorCode,
+                lastErrorMessage,
+                retryCount,
+                lastAttemptAt,
+                lastSuccessAt);
     }
 }

@@ -1,9 +1,10 @@
 package dev.piovra.model.order;
 
-import dev.piovra.common.ChannelId;
-import dev.piovra.common.TenantId;
 import java.time.Instant;
 import java.util.List;
+
+import dev.piovra.common.ChannelId;
+import dev.piovra.common.TenantId;
 
 /**
  * A normalized order. The pair (channelId, channelOrderId) is UNIQUE in the database: it is the

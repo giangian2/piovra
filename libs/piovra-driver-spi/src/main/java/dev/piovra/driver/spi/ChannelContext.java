@@ -1,9 +1,10 @@
 package dev.piovra.driver.spi;
 
-import dev.piovra.common.ChannelId;
-import dev.piovra.common.TenantId;
 import java.util.Locale;
 import java.util.Map;
+
+import dev.piovra.common.ChannelId;
+import dev.piovra.common.TenantId;
 
 /**
  * Everything specific to the account the driver is operating on. Credentials arrive already

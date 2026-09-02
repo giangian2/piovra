@@ -1,7 +1,5 @@
 package dev.piovra.publication.domain;
 
-import dev.piovra.model.channel.FieldGroup;
-import dev.piovra.model.product.Media;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,6 +7,9 @@ import java.util.EnumMap;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.TreeMap;
+
+import dev.piovra.model.channel.FieldGroup;
+import dev.piovra.model.product.Media;
 
 /**
  * Computes one hash per field group of the desired payload.
@@ -37,16 +38,18 @@ public final class FieldGroupHasher {
     String canonicalString(DesiredListing l, FieldGroup group) {
         StringBuilder sb = new StringBuilder(256);
         switch (group) {
-            case STOCK -> l.variants().forEach(v -> sb.append(v.sku())
-                    .append('=')
-                    .append(v.quantity())
-                    .append(SEP));
-            case PRICE -> l.variants().forEach(v -> sb.append(v.sku())
-                    .append('=')
-                    .append(v.price())
-                    .append('/')
-                    .append(v.compareAtPrice() == null ? "" : v.compareAtPrice())
-                    .append(SEP));
+            case STOCK ->
+                l.variants().forEach(v -> sb.append(v.sku())
+                        .append('=')
+                        .append(v.quantity())
+                        .append(SEP));
+            case PRICE ->
+                l.variants().forEach(v -> sb.append(v.sku())
+                        .append('=')
+                        .append(v.price())
+                        .append('/')
+                        .append(v.compareAtPrice() == null ? "" : v.compareAtPrice())
+                        .append(SEP));
             case CONTENT -> {
                 sb.append(nz(l.title())).append(SEP);
                 sb.append(nz(l.description())).append(SEP);
@@ -60,12 +63,13 @@ public final class FieldGroupHasher {
                 });
             }
             case MEDIA -> l.media().forEach(m -> sb.append(mediaFingerprint(m)).append(SEP));
-            case SHIPPING -> l.variants().forEach(v -> sb.append(v.sku())
-                    .append('=')
-                    .append(v.weightGrams() == null ? "" : v.weightGrams())
-                    .append('/')
-                    .append(v.dimensions() == null ? "" : v.dimensions())
-                    .append(SEP));
+            case SHIPPING ->
+                l.variants().forEach(v -> sb.append(v.sku())
+                        .append('=')
+                        .append(v.weightGrams() == null ? "" : v.weightGrams())
+                        .append('/')
+                        .append(v.dimensions() == null ? "" : v.dimensions())
+                        .append(SEP));
         }
         return sb.toString();
     }
@@ -81,7 +85,8 @@ public final class FieldGroupHasher {
     }
 
     private static void appendSorted(StringBuilder sb, Map<String, String> map) {
-        new TreeMap<>(map).forEach((k, v) -> sb.append(k).append('=').append(nz(v)).append(','));
+        new TreeMap<>(map)
+                .forEach((k, v) -> sb.append(k).append('=').append(nz(v)).append(','));
     }
 
     private static String nz(Object s) {

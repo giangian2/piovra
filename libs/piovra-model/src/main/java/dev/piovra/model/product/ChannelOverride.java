@@ -1,7 +1,8 @@
 package dev.piovra.model.product;
 
-import dev.piovra.common.Money;
 import java.util.Map;
+
+import dev.piovra.common.Money;
 
 /**
  * A per-channel override. A null field means "use the canonical value": absence must be

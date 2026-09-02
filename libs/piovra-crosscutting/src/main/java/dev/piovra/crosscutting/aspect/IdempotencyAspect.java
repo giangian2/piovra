@@ -1,8 +1,7 @@
 package dev.piovra.crosscutting.aspect;
 
-import dev.piovra.crosscutting.annotation.Idempotent;
-import dev.piovra.crosscutting.port.IdempotencyStore;
 import java.time.Duration;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -10,6 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+
+import dev.piovra.crosscutting.annotation.Idempotent;
+import dev.piovra.crosscutting.port.IdempotencyStore;
 
 /**
  * Makes a method annotated with {@link Idempotent} idempotent.

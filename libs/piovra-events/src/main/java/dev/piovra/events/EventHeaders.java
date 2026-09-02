@@ -13,6 +13,7 @@ public final class EventHeaders {
     public static final String CORRELATION_ID = "x-piovra-correlation-id";
     /** Id of the event that caused this one. Reconstructs the causal tree. */
     public static final String CAUSATION_ID = "x-piovra-causation-id";
+
     public static final String TENANT = "x-piovra-tenant";
     public static final String SCHEMA_VERSION = "x-piovra-schema-version";
     public static final String CHANNEL_ID = "x-piovra-channel-id";
