@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v4
+        with:
+          # Same major as the development environment and the runtime images: a project
+          # that builds on one JVM and runs on another discovers the differences in
+          # production.
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+
+      - name: Build and test
+        run: ./mvnw -B clean verify
+
+      # Mandatory PR gates (docs/10-stack-and-repo.md). The ArchUnit tests already run inside
+      # verify: they are the ones preventing a service from depending on another.
+      - name: Formatting
+        run: ./mvnw -B spotless:check
+
+      - name: Test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore

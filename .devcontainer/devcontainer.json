@@ -1,0 +1,51 @@
+{
+  "name": "Piovra (JDK 25)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "piovra",
+  "workspaceFolder": "/workspace",
+
+  "mounts": [
+    // The Maven cache survives container rebuilds.
+    "source=piovra-m2,target=/home/piovra/.m2,type=volume",
+    // The host's Docker: Testcontainers run beside the devcontainer, not inside it.
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+
+  "containerEnv": {
+    // Testcontainers must reach the local infrastructure on the host.
+    "TESTCONTAINERS_HOST_OVERRIDE": "host.docker.internal",
+    "KAFKA_BOOTSTRAP": "host.docker.internal:9092",
+    "PIOVRA_DB_URL": "jdbc:postgresql://host.docker.internal:5432/piovra",
+    "REDIS_URL": "redis://host.docker.internal:6379",
+    "S3_ENDPOINT": "http://host.docker.internal:9000"
+  },
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+
+  "forwardPorts": [8080, 8081, 8082, 8083],
+  "portsAttributes": {
+    "8080": { "label": "piovra-core" },
+    "8081": { "label": "piovra-feed" },
+    "8082": { "label": "connector-woocommerce" },
+    "8083": { "label": "connector-ebay" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        "redhat.vscode-yaml",
+        "editorconfig.editorconfig"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.format.settings.url": ".devcontainer/eclipse-format.xml",
+        "files.trimTrailingWhitespace": true
+      }
+    }
+  },
+
+  "postCreateCommand": "./mvnw -B -q dependency:go-offline || true"
+}

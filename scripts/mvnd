@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Runs the Maven wrapper inside a JDK 25 container, for anyone not using the devcontainer.
+#
+#   ./scripts/mvnd clean install
+#   ./scripts/mvnd -pl services/piovra-publication test
+#
+# The project requires Java 25 (JEP 491: no virtual-thread pinning on synchronized blocks).
+# If the host already has a JDK 25 this script is unnecessary: just use ./mvnw.
+set -euo pipefail
+
+IMAGE="${PIOVRA_BUILD_IMAGE:-eclipse-temurin:25-jdk}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Maven cache shared across runs, otherwise every build re-downloads everything.
+docker volume inspect piovra-m2 >/dev/null 2>&1 || docker volume create piovra-m2 >/dev/null
+
+# -it only when a terminal is actually present: otherwise the container will not start in CI.
+TTY_FLAGS=()
+[[ -t 0 && -t 1 ]] && TTY_FLAGS=(-it)
+
+exec docker run --rm "${TTY_FLAGS[@]}" \
+  -v "${ROOT}:/workspace" \
+  -v piovra-m2:/root/.m2 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --add-host=host.docker.internal:host-gateway \
+  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  -e KAFKA_BOOTSTRAP=host.docker.internal:9092 \
+  -e PIOVRA_DB_URL=jdbc:postgresql://host.docker.internal:5432/piovra \
+  -w /workspace \
+  "${IMAGE}" \
+  ./mvnw -B "$@"

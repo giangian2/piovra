@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: piovra-core
+  threads:
+    # The core is I/O bound on the database and Kafka: parallelism comes from virtual
+    # threads, not from a pool size (docs/10-stack-and-repo.md).
+    virtual:
+      enabled: true
+
+  datasource:
+    url: ${PIOVRA_DB_URL:jdbc:postgresql://localhost:5432/piovra}
+    username: ${PIOVRA_DB_USER:piovra_core}
+    password: ${PIOVRA_DB_PASSWORD:piovra_core}
+    hikari:
+      # With virtual threads the bottleneck moves here: 5000 tasks wanting a connection
+      # from a pool of 20 will queue. Size it, do not ignore it.
+      maximum-pool-size: 30
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    # One schema per service module, even while they run in the same process: that is what
+    # makes the future split into separate deployables free.
+    schemas: catalog,inventory,orders,publication,channel_config
+    locations:
+      - classpath:db/migration/catalog
+      - classpath:db/migration/inventory
+      - classpath:db/migration/orders
+      - classpath:db/migration/publication
+      - classpath:db/migration/channel_config
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        compression.type: zstd
+        linger.ms: 20
+        batch.size: 131072
+    consumer:
+      group-id: piovra-core
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+        max.poll.records: 500
+        max.poll.interval.ms: 300000
+    listener:
+      ack-mode: manual
+
+server:
+  port: 8080
+  shutdown: graceful
+
+management:
+  endpoints.web.exposure.include: health,info,prometheus
+  endpoint.health.probes.enabled: true
+
+logging:
+  level:
+    dev.piovra: INFO

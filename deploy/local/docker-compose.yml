@@ -1,0 +1,96 @@
+# Local development environment.
+#   docker compose -f deploy/local/docker-compose.yml up -d
+#
+# No Piovra service runs here: infrastructure only. The applications are started from the IDE
+# or with ./mvnw -pl apps/piovra-core spring-boot:run, keeping the edit cycle short.
+name: piovra-local
+
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: piovra-kafka
+    ports: ["9092:9092"]
+    environment:
+      # KRaft: no ZooKeeper. Single node, suitable for local use only.
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:9093,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Locally topics auto-create; never in production: partitions and retention are
+      # explicit decisions (docs/04-kafka-events.md).
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 6
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: piovra-kafka-ui
+    ports: ["8090:8080"]
+    environment:
+      KAFKA_CLUSTERS_0_NAME: piovra-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: piovra-postgres
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_DB: piovra
+      POSTGRES_USER: piovra
+      POSTGRES_PASSWORD: piovra
+    volumes:
+      - piovra-pg:/var/lib/postgresql/data
+      # Creates one user per service, granted only on its own schema: the "no cross-service
+      # joins" rule becomes enforceable rather than merely hoped for.
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/10-schemas.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U piovra -d piovra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: piovra-redis
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "no"]
+
+  minio:
+    image: minio/minio:latest
+    container_name: piovra-minio
+    ports: ["9000:9000", "9001:9001"]
+    environment:
+      MINIO_ROOT_USER: piovra
+      MINIO_ROOT_PASSWORD: piovra123
+    command: server /data --console-address ":9001"
+    volumes:
+      - piovra-minio:/data
+
+  # The marketplace APIs under the "local" profile. The "sandbox" profile points at the real
+  # sandboxes instead, and is what the nightly TCK job runs against.
+  wiremock:
+    image: wiremock/wiremock:latest
+    container_name: piovra-wiremock
+    ports: ["8089:8080"]
+    command: ["--global-response-templating", "--verbose"]
+    volumes:
+      - ./wiremock:/home/wiremock
+
+volumes:
+  piovra-pg:
+  piovra-minio:

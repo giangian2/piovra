@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: piovra-feed
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${PIOVRA_DB_URL:jdbc:postgresql://localhost:5432/piovra}
+    username: ${PIOVRA_DB_USER:piovra_feed}
+    password: ${PIOVRA_DB_PASSWORD:piovra_feed}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    schemas: feed
+    locations:
+      - classpath:db/migration/feed
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+        compression.type: zstd
+        linger.ms: 20
+    consumer:
+      group-id: piovra-feed
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual
+  servlet:
+    multipart:
+      # Above this size the feed does not go through the gateway: direct upload to S3 with
+      # a presigned URL, then POST /v1/feeds/register (docs/05-feed-flow.md).
+      max-file-size: 200MB
+      max-request-size: 200MB
+
+piovra:
+  feed:
+    storage:
+      endpoint: ${S3_ENDPOINT:http://localhost:9000}
+      bucket: ${S3_BUCKET:piovra-feeds}
+    sftp:
+      enabled: false
+      port: 2222
+      # A file is only considered complete after this quiet period, otherwise we read a
+      # half-finished upload.
+      quiet-period: PT30S
+
+server:
+  port: 8081
+  shutdown: graceful
+
+management:
+  endpoints.web.exposure.include: health,info,prometheus
+
+logging:
+  level:
+    dev.piovra: INFO

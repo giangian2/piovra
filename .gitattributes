@@ -1,0 +1,28 @@
+# Line-ending normalization: the repository is always LF, the checkout adapts to the host.
+# Without this, a contributor on Windows produces a 3000-line diff on their first commit.
+* text=auto eol=lf
+
+# Scripts must stay LF even on Windows, otherwise they will not run.
+*.sh      text eol=lf
+mvnw      text eol=lf
+scripts/* text eol=lf
+Dockerfile text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+
+# Windows
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binaries: no conversion, no textual diff
+*.jar  binary
+*.png  binary
+*.jpg  binary
+*.gif  binary
+*.zip  binary
+*.gz   binary
+
+# Exclude documentation from GitHub's language statistics, otherwise the repository shows up
+# as "Markdown" instead of "Java".
+docs/** linguist-documentation
+*.md    linguist-documentation

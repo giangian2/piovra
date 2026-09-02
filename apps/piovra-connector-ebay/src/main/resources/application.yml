@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: piovra-connector-ebay
+  threads:
+    # Decisive here: the connector spends 95% of its time waiting on marketplace APIs.
+    # The concurrency limit is NOT the pool, it is the rate limiter.
+    virtual:
+      enabled: true
+  datasource:
+    url: ${PIOVRA_DB_URL:jdbc:postgresql://localhost:5432/piovra}
+    username: ${PIOVRA_DB_USER:piovra_connector_ebay}
+    password: ${PIOVRA_DB_PASSWORD:piovra_connector_ebay}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    schemas: connector_ebay
+    locations:
+      - classpath:db/migration/connector_ebay
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: piovra-connector-ebay
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        max.poll.records: 50
+        # Deliberately high: a marketplace call can be slow and we do not want the broker
+        # to consider dead a consumer that is merely waiting.
+        max.poll.interval.ms: 600000
+    listener:
+      ack-mode: manual
+
+piovra:
+  connector:
+    channel-type: EBAY
+    # The bucket is distributed in Redis: it applies cluster-wide, not per replica.
+    rate-limit:
+      requests-per-second: 8
+      burst: 20
+    polling:
+      orders: PT2M
+      # Sliding window with overlap: absorbs the marketplace's visibility lag.
+      overlap: PT5M
+      reconcile: PT6H
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      ebay:
+        failure-rate-threshold: 50
+        sliding-window-size: 20
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+
+server:
+  port: 8083
+  shutdown: graceful
+
+management:
+  endpoints.web.exposure.include: health,info,prometheus
+
+logging:
+  level:
+    dev.piovra: INFO

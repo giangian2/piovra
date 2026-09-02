@@ -1,0 +1,66 @@
+# ---------- build ----------
+target/
+build/
+out/
+*.class
+
+# Maven distributions downloaded by the wrapper: the script fetches them again by itself.
+.mvn/wrapper/maven-wrapper.jar
+
+# ---------- generated artifacts ----------
+# eBay clients generated from OpenAPI and Avro classes: they are regenerated at build time,
+# committing them would mean two sources of truth for the same contract.
+**/generated-sources/
+**/generated-test-sources/
+
+# ---------- IDE ----------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+!.vscode/extensions.json
+.settings/
+.classpath
+.project
+.factorypath
+nbproject/
+.apt_generated/
+
+# ---------- operating system ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- logs and temporaries ----------
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+*.hprof
+.attach_pid*
+
+# ---------- local configuration and secrets ----------
+# Marketplace credentials live in Vault, never in the repository. These rules catch human
+# error; they are not how the normal case is handled.
+.env
+.env.*
+!.env.example
+*.local.yml
+*.local.yaml
+application-local.yml
+application-secret*.yml
+secrets/
+*.pem
+*.p12
+*.jks
+*.keystore
+*.key
+!**/src/test/resources/**/*.key
+
+# ---------- local data ----------
+# Sample feeds and dumps: they may contain real supplier catalogs.
+/data/
+/feeds/
+*.dump
+*.sql.gz

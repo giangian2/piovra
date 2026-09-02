@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>dev.piovra</groupId>
+  <artifactId>piovra-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Piovra</name>
+  <description>High-performance product and order synchronization across marketplaces</description>
+
+  <modules>
+    <module>libs</module>
+    <module>drivers</module>
+    <module>services</module>
+    <module>apps</module>
+  </modules>
+
+  <properties>
+    <!-- Java 25 is a requirement, not a preference: since JEP 491 a synchronized block no
+         longer pins a virtual thread to its carrier thread. On 21, any library holding a
+         synchronized monitor across a blocking call would cancel out the benefit of virtual
+         threads - which is exactly what a connector does. Without a JDK 25 on the host, use
+         the devcontainer or ./scripts/mvnd. -->
+    <java.version>25</java.version>
+    <maven.compiler.release>${java.version}</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <spring-boot.version>4.1.1</spring-boot.version>
+    <testcontainers.version>2.0.5</testcontainers.version>
+    <resilience4j.version>2.4.0</resilience4j.version>
+    <ulid.version>5.2.4</ulid.version>
+    <univocity.version>2.9.1</univocity.version>
+    <archunit.version>1.5.0</archunit.version>
+
+    <spotless.version>3.10.1</spotless.version>
+    <surefire.version>3.5.2</surefire.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- internal modules -->
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-common</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-model</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-events</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-driver-spi</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-kafka-support</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-outbox</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-crosscutting</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-driver-tck</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-test-support</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-driver-ebay</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-driver-woocommerce</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-catalog</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-inventory</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-order</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-publication</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-channel-config</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-feed-ingestion</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-feed-processor</artifactId><version>${project.version}</version></dependency>
+
+      <!-- third parties not covered by the BOMs -->
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-spring-boot4</artifactId>
+        <version>${resilience4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.f4b6a3</groupId>
+        <artifactId>ulid-creator</artifactId>
+        <version>${ulid.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.univocity</groupId>
+        <artifactId>univocity-parsers</artifactId>
+        <version>${univocity.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${archunit.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- available everywhere: every module must be able to write tests -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <!-- Parameter names end up in the bytecode: without this, the SpEL expressions of the
+           annotations (@Idempotent, @Audited) could only use #a0, #a1... -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <parameters>true</parameters>
+        </configuration>
+      </plugin>
+      <!-- An obscure "release 25 not supported" compile error costs half an hour. Better to
+           say up front what is missing and how to get it. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>verifica-jdk</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[25,)</version>
+                  <message>Piovra requires JDK 25 (JEP 491: virtual threads without pinning on
+synchronized blocks). Options:
+  - open the project in the devcontainer (.devcontainer/)
+  - or build in a container:  ./scripts/mvnd clean install</message>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire.version}</version>
+      </plugin>
+      <!-- Deliberately not bound to a phase: run it with `mvnw spotless:apply`.
+           Binding it to validate breaks the build on every misplaced comma. -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <java>
+            <palantirJavaFormat/>
+            <removeUnusedImports/>
+            <importOrder><order>java,javax,jakarta,org,com,dev.piovra,</order></importOrder>
+          </java>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
