@@ -1,7 +1,11 @@
 # ---------- build ----------
 target/
 build/
-out/
+# Anchored to the repo root: unanchored "out/" would also match every application/port/out and
+# adapter/out package in the hexagonal layout (docs/12-development-guidelines.md section 4), and
+# git add -A would silently skip real source code sitting in a directory that happens to be
+# named "out" for architectural reasons, not build-output ones.
+/out/
 *.class
 
 # Maven distributions downloaded by the wrapper: the script fetches them again by itself.
