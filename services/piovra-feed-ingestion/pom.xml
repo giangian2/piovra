@@ -41,5 +41,18 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
+    <!-- S3-compatible object storage for the immutable raw feed archive (docs/05-feed-flow.md):
+         MinIO locally via endpointOverride, real S3 in production, same client either way. -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+    </dependency>
+    <!-- Optional: only for the HealthIndicator/Health types. The assembling app (apps/piovra-feed)
+         already depends on spring-boot-starter-actuator to actually expose and register it. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+      <optional>true</optional>
+    </dependency>
   </dependencies>
 </project>

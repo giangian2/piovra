@@ -36,6 +36,8 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     producer:
       acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
@@ -46,6 +48,8 @@ spring:
       group-id: piovra-core
       auto-offset-reset: earliest
       enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
         isolation.level: read_committed
         max.poll.records: 500
@@ -64,3 +68,9 @@ management:
 logging:
   level:
     dev.piovra: INFO
+  # Spring Boot's built-in structured JSON logging: no extra dependency, correlatable with the MDC
+  # keys CorrelationIdFilter / MdcRecordInterceptor already populate (docs/09-errors-observability.md
+  # section 6.3).
+  structured:
+    format:
+      console: ecs

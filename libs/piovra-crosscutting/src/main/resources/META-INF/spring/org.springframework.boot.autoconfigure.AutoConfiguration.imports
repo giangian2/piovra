@@ -1,1 +1,2 @@
 dev.piovra.crosscutting.CrossCuttingAutoConfiguration
+dev.piovra.crosscutting.web.CrossCuttingWebAutoConfiguration

@@ -36,9 +36,11 @@
     <ulid.version>5.2.4</ulid.version>
     <univocity.version>2.9.1</univocity.version>
     <archunit.version>1.5.0</archunit.version>
+    <awaitility.version>4.2.2</awaitility.version>
 
     <spotless.version>3.10.1</spotless.version>
     <surefire.version>3.5.2</surefire.version>
+    <awssdk.version>2.29.52</awssdk.version>
   </properties>
 
   <dependencyManagement>
@@ -54,6 +56,15 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
         <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Object storage: S3-compatible (MinIO locally, real S3 in production), so feed-ingestion
+           can use the same client and endpointOverride for both (docs/10-stack-and-repo.md). -->
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>${awssdk.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -99,6 +110,11 @@
         <artifactId>archunit-junit5</artifactId>
         <version>${archunit.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

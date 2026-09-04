@@ -28,8 +28,9 @@ The name mirrors the architecture:
 
 ## Status
 
-> ⚠️ Phase: **early development.** The architecture and contracts are settled; most service modules
-> are still skeletons. See [Status of the skeleton](#status-of-the-skeleton).
+> ⚠️ Phase: **early development.** The core (catalog + channel-config + publication) runs end to end
+> against Kafka and Postgres, with automated test coverage. Inventory, order, feed parsing and driver
+> bodies are still to come. See [Status of the skeleton](#status-of-the-skeleton).
 
 ## Documentation index
 
@@ -125,14 +126,21 @@ extracting one is a packaging change, not a refactor.
 | Maven structure, 22 modules, green build on JDK 25 | ✅ |
 | Devcontainer, CI, runtime images (same Java major everywhere) | ✅ |
 | Contracts: canonical model, events, driver SPI | ✅ |
-| Diff engine and per-channel projection (`publication`) | ✅ 9 tests |
-| Cross-cutting: `@Idempotent`, `@ChannelCall`, `@Audited` plus aspects | ✅ 3 tests |
+| `piovra-kafka-support`: JSON (de)serialization, MDC propagation, DLQ error handler | ✅ unit + Testcontainers tests |
+| `piovra-outbox`: transactional outbox (poll-and-publish relay, one table per schema) | ✅ Testcontainers tests |
+| `piovra-crosscutting`: `@Idempotent`, `@ChannelCall`, `@Audited` plus aspects; `web` package (correlation filter, global exception handler) | ✅ unit tests |
+| **`channel-config`**: registry, REST API, outbox → `channel.config.v1` | ✅ persistence + outbox + HTTP tests |
+| **`catalog`**: upsert/diff domain logic, REST API, outbox → `catalog.product.changed.v1`, first-noise-filter no-op | ✅ domain + persistence + outbox + HTTP tests |
+| **`publication`**: existing diff engine (`ChannelProjector`/`DiffCalculator`, untouched) wired to real consumers, `channel_listing` persistence, idempotent command emission | ✅ domain + Testcontainers consumer tests, including the "same event twice" case |
+| Diff engine and per-channel projection (`publication` domain) | ✅ 9 tests |
+| Engine bootstrap (all 4 apps): Kafka (de)serializers, structured JSON logging, health probes | ✅ |
+| S3-compatible object storage wiring (`feed-ingestion`, `S3Client` + health check) | ✅ |
 | Driver TCK | ✅ complete skeleton |
 | WooCommerce / eBay drivers | 🚧 structure, capabilities and error translation; bodies pending |
-| catalog / inventory / order / channel-config / feed | 🚧 empty modules |
-| kafka-support, outbox | 🚧 empty modules |
+| `inventory` / `order` services | 🚧 empty modules (deferred to a follow-up step) |
+| `feed-ingestion` / `feed-processor` business logic (parsing, mapping, S3 upload) | 🚧 not started; only the app skeleton and S3 client are wired |
 | Local Docker environment | ✅ |
-| Flyway migrations, consumers, REST adapters | ⬜ to do |
+| Connector command/result consumers, order polling | ⬜ to do |
 
 ## Build
 
@@ -178,6 +186,37 @@ Kafka UI on :8090, MinIO on :9001, WireMock on :8089.
 ```bash
 docker build -f deploy/Dockerfile --build-arg APP=piovra-core -t piovra/core .
 ```
+
+## Try the core end to end
+
+With the local infrastructure up (`docker compose -f deploy/local/docker-compose.yml up -d`) and
+`./scripts/mvnd -pl apps/piovra-core spring-boot:run`:
+
+```bash
+# 1. Register a channel - watch it land on the channel.config.v1 topic (Kafka UI: localhost:8090)
+curl -X PUT localhost:8080/v1/channels/woo-main \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"WOOCOMMERCE","marketplaceCode":"https://shop.test","enabled":true,
+       "credentialsRef":"vault://x","policy":{"stockBuffer":0,"maxPublishableQty":99,
+       "priceAdjustmentPercent":0,"endOnZero":false,"criticalStockThreshold":3,
+       "requiresManualApproval":false},"categoryMapping":{},"settings":{}}'
+
+# 2. Upsert a product - watch catalog.product.changed.v1, then channel.command.woocommerce.normal.v1
+curl -X PUT localhost:8080/v1/products/TSHIRT-BASE \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"ACTIVE","type":"SIMPLE","title":{"values":{"it":"T-shirt"}},
+       "description":{"values":{"it":"desc"}},"brand":"Acme","categoryPath":["Test"],
+       "identifiers":{},"media":[],"attributes":{},"variantAxes":[],
+       "variants":[{"sku":"TSHIRT-BASE","identifiers":{},"axisValues":{},
+         "price":{"amount":19.90,"currency":"EUR"},"weightGrams":null,"dimensions":null,
+         "media":[],"attributes":{}}],"channelOverrides":{}}'
+
+# 3. Resubmit the identical payload: 204, no new event (the "first noise filter")
+```
+
+This is exactly what `ProductChangedConsumerIT` and `ChannelConfigOutboxRelayIT` verify with
+Testcontainers, minus the manual curl — see those tests for the same flow driven end to end
+automatically.
 
 ## Contributing
 

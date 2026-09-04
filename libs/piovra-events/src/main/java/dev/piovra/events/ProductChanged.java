@@ -62,6 +62,18 @@ public record ProductChanged(
                 Instant.now());
     }
 
+    public static ProductChanged discontinued(CanonicalProduct product, Set<String> changedFields) {
+        return new ProductChanged(
+                Ids.newId(),
+                product.tenantId(),
+                product.sku(),
+                product.revision(),
+                ChangeType.DISCONTINUED,
+                changedFields,
+                product,
+                Instant.now());
+    }
+
     public List<Sku> variantSkus() {
         return product.variants().stream().map(v -> v.sku()).toList();
     }

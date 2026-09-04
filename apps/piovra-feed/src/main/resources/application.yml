@@ -21,6 +21,8 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     producer:
       acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         enable.idempotence: true
         compression.type: zstd
@@ -29,6 +31,8 @@ spring:
       group-id: piovra-feed
       auto-offset-reset: earliest
       enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     listener:
       ack-mode: manual
   servlet:
@@ -43,6 +47,9 @@ piovra:
     storage:
       endpoint: ${S3_ENDPOINT:http://localhost:9000}
       bucket: ${S3_BUCKET:piovra-feeds}
+      region: ${S3_REGION:us-east-1}
+      access-key: ${S3_ACCESS_KEY:piovra}
+      secret-key: ${S3_SECRET_KEY:piovra123}
     sftp:
       enabled: false
       port: 2222
@@ -56,7 +63,11 @@ server:
 
 management:
   endpoints.web.exposure.include: health,info,prometheus
+  endpoint.health.probes.enabled: true
 
 logging:
   level:
     dev.piovra: INFO
+  structured:
+    format:
+      console: ecs

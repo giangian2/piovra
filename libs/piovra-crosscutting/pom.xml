@@ -13,9 +13,19 @@
   <description>Cross-cutting concerns in one place: annotations and aspects.</description>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>dev.piovra</groupId>
       <artifactId>piovra-driver-spi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.piovra</groupId>
+      <artifactId>piovra-events</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -24,6 +34,19 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <!-- Optional: compiles the web package (correlation filter, global exception handler)
+         without forcing servlet/webmvc onto non-web consumers like feed-processor. Modules that
+         already pull spring-boot-starter-web get the real jars through their own starter. -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>
