@@ -5,6 +5,7 @@ import java.util.Map;
 
 import dev.piovra.common.Money;
 import dev.piovra.common.Sku;
+import dev.piovra.model.product.ComplianceDocument;
 import dev.piovra.model.product.Dimensions;
 import dev.piovra.model.product.Media;
 
@@ -25,12 +26,17 @@ public record DesiredListing(
         String channelCategoryId,
         Map<String, String> attributes,
         List<Media> media,
-        List<DesiredVariant> variants) {
+        List<DesiredVariant> variants,
+        /** GPSR: no per-channel override support yet, straight pass-through from the canonical product. */
+        String manufacturerProfileId,
+        String responsiblePersonProfileId,
+        List<ComplianceDocument> complianceDocuments) {
 
     public DesiredListing {
         attributes = attributes == null ? Map.of() : Map.copyOf(attributes);
         media = media == null ? List.of() : List.copyOf(media);
         variants = variants == null ? List.of() : List.copyOf(variants);
+        complianceDocuments = complianceDocuments == null ? List.of() : List.copyOf(complianceDocuments);
     }
 
     public record DesiredVariant(

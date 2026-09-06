@@ -130,6 +130,17 @@ class DiffCalculatorTest {
     }
 
     @Test
+    void a_compliance_only_change_uses_the_dedicated_group() {
+        ChannelListing published = publishedWith(project(product(1, "T-shirt", "19.90"), 10), 1);
+        CanonicalProduct withManufacturer = product(2, "T-shirt", "19.90", ProductStatus.ACTIVE, "manufacturer-1");
+
+        PublicationDecision decision =
+                diff.decide(project(withManufacturer, 10), published, withManufacturer, policy());
+
+        assertThat(decision.changedGroups()).containsExactly(FieldGroup.COMPLIANCE);
+    }
+
+    @Test
     void a_forced_resync_clears_the_hashes_and_republishes_everything() {
         CanonicalProduct p = product(1, "T-shirt", "19.90");
         DesiredListing desired = project(p, 10);
@@ -171,10 +182,15 @@ class DiffCalculatorTest {
     }
 
     private static CanonicalProduct product(long revision, String title, String price) {
-        return product(revision, title, price, ProductStatus.ACTIVE);
+        return product(revision, title, price, ProductStatus.ACTIVE, null);
     }
 
     private static CanonicalProduct product(long revision, String title, String price, ProductStatus status) {
+        return product(revision, title, price, status, null);
+    }
+
+    private static CanonicalProduct product(
+            long revision, String title, String price, ProductStatus status, String manufacturerProfileId) {
         return new CanonicalProduct(
                 TENANT,
                 SKU,
@@ -191,6 +207,9 @@ class DiffCalculatorTest {
                 List.of(),
                 List.of(CanonicalVariant.simple(SKU, Money.euro(price))),
                 Map.of(),
+                manufacturerProfileId,
+                null,
+                List.of(),
                 Instant.parse("2026-09-01T00:00:00Z"));
     }
 }

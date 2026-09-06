@@ -38,6 +38,11 @@ public record CanonicalProduct(
         List<CanonicalVariant> variants,
         /** Per-channel overrides: avoids duplicating the product just to publish a different price. */
         Map<ChannelId, ChannelOverride> channelOverrides,
+        /** GPSR: id of the {@code ComplianceProfile} (type MANUFACTURER) responsible for this product. */
+        String manufacturerProfileId,
+        /** GPSR: id of the {@code ComplianceProfile} (type RESPONSIBLE_PERSON) responsible for this product. */
+        String responsiblePersonProfileId,
+        List<ComplianceDocument> complianceDocuments,
         Instant updatedAt) {
 
     public CanonicalProduct {
@@ -47,6 +52,7 @@ public record CanonicalProduct(
         variantAxes = variantAxes == null ? List.of() : List.copyOf(variantAxes);
         variants = variants == null ? List.of() : List.copyOf(variants);
         channelOverrides = channelOverrides == null ? Map.of() : Map.copyOf(channelOverrides);
+        complianceDocuments = complianceDocuments == null ? List.of() : List.copyOf(complianceDocuments);
         if (variants.isEmpty()) {
             throw new IllegalArgumentException("product without variants: " + sku);
         }

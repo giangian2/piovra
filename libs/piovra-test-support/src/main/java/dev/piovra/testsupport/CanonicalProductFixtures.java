@@ -41,6 +41,9 @@ public final class CanonicalProductFixtures {
                 List.of(),
                 List.of(CanonicalVariant.simple(canonicalSku, price)),
                 Map.of(),
+                null,
+                null,
+                List.of(),
                 Instant.now());
     }
 }

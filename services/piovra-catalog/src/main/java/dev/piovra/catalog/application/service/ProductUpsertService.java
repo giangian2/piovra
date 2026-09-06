@@ -8,9 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import dev.piovra.catalog.application.port.in.FindProductUseCase;
 import dev.piovra.catalog.application.port.in.UpsertProductUseCase;
+import dev.piovra.catalog.application.port.out.ComplianceProfileRepository;
 import dev.piovra.catalog.application.port.out.ProductRepository;
 import dev.piovra.catalog.domain.service.CatalogUpsertService;
 import dev.piovra.catalog.domain.service.UpsertPlan;
+import dev.piovra.common.ErrorClass;
+import dev.piovra.common.PiovraException;
 import dev.piovra.common.Sku;
 import dev.piovra.common.TenantId;
 import dev.piovra.events.ProductChanged;
@@ -21,17 +24,24 @@ import dev.piovra.outbox.OutboxWriter;
 public class ProductUpsertService implements UpsertProductUseCase, FindProductUseCase {
 
     private final ProductRepository repository;
+    private final ComplianceProfileRepository complianceProfileRepository;
     private final OutboxWriter outboxWriter;
 
     public ProductUpsertService(
-            ProductRepository repository, @Qualifier("catalogOutboxWriter") OutboxWriter outboxWriter) {
+            ProductRepository repository,
+            ComplianceProfileRepository complianceProfileRepository,
+            @Qualifier("catalogOutboxWriter") OutboxWriter outboxWriter) {
         this.repository = repository;
+        this.complianceProfileRepository = complianceProfileRepository;
         this.outboxWriter = outboxWriter;
     }
 
     @Override
     @Transactional
     public Optional<ProductChanged> upsert(TenantId tenantId, CanonicalProduct draft) {
+        requireProfileExists(tenantId, draft.manufacturerProfileId());
+        requireProfileExists(tenantId, draft.responsiblePersonProfileId());
+
         Optional<CanonicalProduct> existing = repository.findBySku(tenantId, draft.sku());
         UpsertPlan plan = CatalogUpsertService.plan(existing, draft);
 
@@ -53,5 +63,15 @@ public class ProductUpsertService implements UpsertProductUseCase, FindProductUs
     @Override
     public Optional<CanonicalProduct> find(TenantId tenantId, Sku sku) {
         return repository.findBySku(tenantId, sku);
+    }
+
+    private void requireProfileExists(TenantId tenantId, String profileId) {
+        if (profileId != null
+                && complianceProfileRepository.findById(tenantId, profileId).isEmpty()) {
+            throw new PiovraException(
+                    ErrorClass.VALIDATION,
+                    "COMPLIANCE_PROFILE_NOT_FOUND",
+                    "compliance profile not found: " + profileId);
+        }
     }
 }

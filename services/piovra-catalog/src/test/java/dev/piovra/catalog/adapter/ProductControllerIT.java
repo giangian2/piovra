@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,12 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.piovra.catalog.adapter.in.web.ProductRequest;
+import dev.piovra.catalog.adapter.out.persistence.ComplianceProfileRepositoryAdapter;
 import dev.piovra.common.Ids;
+import dev.piovra.common.TenantId;
+import dev.piovra.model.compliance.Address;
+import dev.piovra.model.compliance.ComplianceProfile;
+import dev.piovra.model.compliance.ComplianceProfileType;
 import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.testsupport.CanonicalProductFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
@@ -34,7 +40,37 @@ class ProductControllerIT extends PiovraIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private ComplianceProfileRepositoryAdapter complianceProfileRepository;
+
     private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    @Test
+    void a_product_referencing_an_existing_manufacturer_profile_is_accepted() throws Exception {
+        ComplianceProfile manufacturer = complianceProfileRepository.save(new ComplianceProfile(
+                Ids.newId(),
+                TenantId.of("default"),
+                ComplianceProfileType.MANUFACTURER,
+                "Acme Srl",
+                new Address("Via Roma 1", "Milano", "20100", "IT"),
+                "compliance@acme.test",
+                null,
+                Instant.now()));
+        String sku = "HTTP-" + Ids.newId();
+
+        HttpResponse<String> put = send("PUT", "/v1/products/" + sku, requestBodyFor(sku, manufacturer.id()));
+
+        assertThat(put.statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void a_product_referencing_an_unknown_manufacturer_profile_is_rejected() throws Exception {
+        String sku = "HTTP-" + Ids.newId();
+
+        HttpResponse<String> put = send("PUT", "/v1/products/" + sku, requestBodyFor(sku, "UNKNOWN-PROFILE"));
+
+        assertThat(put.statusCode()).isEqualTo(400);
+    }
 
     @Test
     void putting_a_new_product_returns_200_and_it_can_be_read_back() throws Exception {
@@ -66,6 +102,10 @@ class ProductControllerIT extends PiovraIntegrationTest {
     }
 
     private String requestBodyFor(String sku) throws Exception {
+        return requestBodyFor(sku, null);
+    }
+
+    private String requestBodyFor(String sku, String manufacturerProfileId) throws Exception {
         CanonicalProduct fixture = CanonicalProductFixtures.simpleProduct(sku);
         ProductRequest request = new ProductRequest(
                 fixture.status(),
@@ -79,7 +119,10 @@ class ProductControllerIT extends PiovraIntegrationTest {
                 fixture.attributes(),
                 fixture.variantAxes(),
                 fixture.variants(),
-                fixture.channelOverrides());
+                fixture.channelOverrides(),
+                manufacturerProfileId,
+                fixture.responsiblePersonProfileId(),
+                fixture.complianceDocuments());
         return objectMapper.writeValueAsString(request);
     }
 

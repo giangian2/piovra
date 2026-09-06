@@ -64,11 +64,36 @@ class ProductFieldDifferTest {
         assertThat(ProductFieldDiffer.changedFields(before, after)).containsExactlyInAnyOrder("title", "variants");
     }
 
+    @Test
+    void a_manufacturer_profile_change_is_reported() {
+        CanonicalProduct before = product("T-shirt", "19.90");
+        CanonicalProduct after = product("T-shirt", "19.90", "manufacturer-1");
+
+        assertThat(ProductFieldDiffer.changedFields(before, after)).containsExactly("manufacturerProfileId");
+    }
+
+    @Test
+    void resending_the_same_manufacturer_profile_is_a_noop() {
+        CanonicalProduct before = product("T-shirt", "19.90", "manufacturer-1");
+        CanonicalProduct after = product("T-shirt", "19.90", "manufacturer-1");
+
+        assertThat(ProductFieldDiffer.changedFields(before, after)).isEmpty();
+    }
+
     private static CanonicalProduct product(String title, String price) {
-        return product(title, price, ProductStatus.ACTIVE);
+        return product(title, price, ProductStatus.ACTIVE, null);
+    }
+
+    private static CanonicalProduct product(String title, String price, String manufacturerProfileId) {
+        return product(title, price, ProductStatus.ACTIVE, manufacturerProfileId);
     }
 
     private static CanonicalProduct product(String title, String price, ProductStatus status) {
+        return product(title, price, status, null);
+    }
+
+    private static CanonicalProduct product(
+            String title, String price, ProductStatus status, String manufacturerProfileId) {
         return new CanonicalProduct(
                 TENANT,
                 SKU,
@@ -85,6 +110,9 @@ class ProductFieldDifferTest {
                 List.of(),
                 List.of(CanonicalVariant.simple(SKU, Money.euro(price))),
                 Map.of(),
+                manufacturerProfileId,
+                null,
+                List.of(),
                 Instant.parse("2026-09-01T00:00:00Z"));
     }
 }

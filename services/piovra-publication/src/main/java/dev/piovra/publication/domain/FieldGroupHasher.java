@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import dev.piovra.model.channel.FieldGroup;
+import dev.piovra.model.product.ComplianceDocument;
 import dev.piovra.model.product.Media;
 
 /**
@@ -70,8 +71,20 @@ public final class FieldGroupHasher {
                         .append('/')
                         .append(v.dimensions() == null ? "" : v.dimensions())
                         .append(SEP));
+            case COMPLIANCE -> {
+                sb.append(nz(l.manufacturerProfileId())).append(SEP);
+                sb.append(nz(l.responsiblePersonProfileId())).append(SEP);
+                l.complianceDocuments().forEach(d -> sb.append(complianceDocumentFingerprint(d))
+                        .append(SEP));
+            }
         }
         return sb.toString();
+    }
+
+    /** Same "compare by content, not URL" rule as {@link #mediaFingerprint}. */
+    private String complianceDocumentFingerprint(ComplianceDocument d) {
+        String identity = d.contentHash() != null ? d.contentHash() : d.url();
+        return d.type() + ":" + nz(d.language()) + ":" + nz(identity);
     }
 
     /**

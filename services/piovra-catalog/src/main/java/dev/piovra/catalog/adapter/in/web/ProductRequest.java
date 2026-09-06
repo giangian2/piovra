@@ -10,6 +10,7 @@ import dev.piovra.common.TenantId;
 import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.model.product.CanonicalVariant;
 import dev.piovra.model.product.ChannelOverride;
+import dev.piovra.model.product.ComplianceDocument;
 import dev.piovra.model.product.Identifiers;
 import dev.piovra.model.product.LocalizedText;
 import dev.piovra.model.product.Media;
@@ -30,7 +31,12 @@ public record ProductRequest(
         Map<String, String> attributes,
         List<String> variantAxes,
         List<CanonicalVariant> variants,
-        Map<ChannelId, ChannelOverride> channelOverrides) {
+        Map<ChannelId, ChannelOverride> channelOverrides,
+        /** GPSR: id of the {@code ComplianceProfile} (type MANUFACTURER) for this product. */
+        String manufacturerProfileId,
+        /** GPSR: id of the {@code ComplianceProfile} (type RESPONSIBLE_PERSON) for this product. */
+        String responsiblePersonProfileId,
+        List<ComplianceDocument> complianceDocuments) {
 
     public CanonicalProduct toProduct(TenantId tenantId, Sku sku) {
         return new CanonicalProduct(
@@ -49,6 +55,9 @@ public record ProductRequest(
                 variantAxes,
                 variants,
                 channelOverrides,
+                manufacturerProfileId,
+                responsiblePersonProfileId,
+                complianceDocuments,
                 Instant.now());
     }
 }

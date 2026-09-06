@@ -16,5 +16,7 @@ public enum FieldGroup {
     /** Images. The most expensive call: compared by hash, never by URL. */
     MEDIA,
     /** Weight, dimensions, shipping policy. */
-    SHIPPING
+    SHIPPING,
+    /** Manufacturer/responsible-person references and GPSR documents. Rarely changes. */
+    COMPLIANCE
 }

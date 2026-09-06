@@ -56,6 +56,9 @@ public final class CatalogUpsertService {
                 product.variantAxes(),
                 product.variants(),
                 product.channelOverrides(),
+                product.manufacturerProfileId(),
+                product.responsiblePersonProfileId(),
+                product.complianceDocuments(),
                 Instant.now());
     }
 }

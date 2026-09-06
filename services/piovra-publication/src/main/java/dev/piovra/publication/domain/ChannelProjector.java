@@ -59,7 +59,10 @@ public final class ChannelProjector {
                 categoryId,
                 attributes,
                 product.media(),
-                variants);
+                variants,
+                product.manufacturerProfileId(),
+                product.responsiblePersonProfileId(),
+                product.complianceDocuments());
     }
 
     private DesiredListing.DesiredVariant projectVariant(

@@ -106,6 +106,9 @@ class CatalogUpsertServiceTest {
                 List.of(),
                 List.of(CanonicalVariant.simple(SKU, Money.euro(price))),
                 Map.of(),
+                null,
+                null,
+                List.of(),
                 Instant.parse("2026-09-01T00:00:00Z"));
     }
 }

@@ -33,6 +33,13 @@ public final class ProductFieldDiffer {
         addIfChanged(changed, "variantAxes", before.variantAxes(), after.variantAxes());
         addIfChanged(changed, "variants", before.variants(), after.variants());
         addIfChanged(changed, "channelOverrides", before.channelOverrides(), after.channelOverrides());
+        addIfChanged(changed, "manufacturerProfileId", before.manufacturerProfileId(), after.manufacturerProfileId());
+        addIfChanged(
+                changed,
+                "responsiblePersonProfileId",
+                before.responsiblePersonProfileId(),
+                after.responsiblePersonProfileId());
+        addIfChanged(changed, "complianceDocuments", before.complianceDocuments(), after.complianceDocuments());
         return changed;
     }
 
