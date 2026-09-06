@@ -2,6 +2,7 @@ package dev.piovra.catalog.application.service;
 
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,8 @@ public class ProductUpsertService implements UpsertProductUseCase, FindProductUs
     private final ProductRepository repository;
     private final OutboxWriter outboxWriter;
 
-    public ProductUpsertService(ProductRepository repository, OutboxWriter outboxWriter) {
+    public ProductUpsertService(
+            ProductRepository repository, @Qualifier("catalogOutboxWriter") OutboxWriter outboxWriter) {
         this.repository = repository;
         this.outboxWriter = outboxWriter;
     }

@@ -3,6 +3,7 @@ package dev.piovra.publication.application.service;
 import java.time.Instant;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,7 +53,7 @@ public class ProductChangedHandler {
             ChannelListingRepository channelListingRepository,
             ChannelProjector channelProjector,
             DiffCalculator diffCalculator,
-            OutboxWriter outboxWriter,
+            @Qualifier("publicationOutboxWriter") OutboxWriter outboxWriter,
             ObjectMapper objectMapper) {
         this.channelDefinitionCache = channelDefinitionCache;
         this.channelListingRepository = channelListingRepository;

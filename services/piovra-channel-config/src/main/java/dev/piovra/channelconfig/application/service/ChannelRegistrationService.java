@@ -3,6 +3,7 @@ package dev.piovra.channelconfig.application.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +28,8 @@ public class ChannelRegistrationService implements RegisterChannelUseCase, FindC
     private final ChannelDefinitionRepository repository;
     private final OutboxWriter outboxWriter;
 
-    public ChannelRegistrationService(ChannelDefinitionRepository repository, OutboxWriter outboxWriter) {
+    public ChannelRegistrationService(
+            ChannelDefinitionRepository repository, @Qualifier("channelConfigOutboxWriter") OutboxWriter outboxWriter) {
         this.repository = repository;
         this.outboxWriter = outboxWriter;
     }

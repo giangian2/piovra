@@ -6,23 +6,27 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dev.piovra.outbox.JpaOutboxWriter;
+import dev.piovra.outbox.AbstractOutboxConfiguration;
 import dev.piovra.outbox.OutboxRelay;
 import dev.piovra.outbox.OutboxWriter;
 
 @Configuration(proxyBeanMethods = false)
-public class PublicationOutboxConfiguration {
+public class PublicationOutboxConfiguration extends AbstractOutboxConfiguration<PublicationOutboxEvent> {
 
-    @Bean
-    public OutboxWriter publicationOutboxWriter(PublicationOutboxRepository repository, ObjectMapper objectMapper) {
-        return new JpaOutboxWriter<>(repository, PublicationOutboxEvent::new, objectMapper);
+    public PublicationOutboxConfiguration(
+            PublicationOutboxRepository repository,
+            ObjectMapper objectMapper,
+            KafkaTemplate<Object, Object> kafkaTemplate) {
+        super(repository, PublicationOutboxEvent::new, objectMapper, kafkaTemplate);
     }
 
     @Bean
-    public OutboxRelay<PublicationOutboxEvent> publicationOutboxRelay(
-            PublicationOutboxRepository repository,
-            KafkaTemplate<Object, Object> kafkaTemplate,
-            ObjectMapper objectMapper) {
-        return new OutboxRelay<>(repository, kafkaTemplate, objectMapper);
+    public OutboxWriter publicationOutboxWriter() {
+        return writer;
+    }
+
+    @Bean
+    public OutboxRelay<PublicationOutboxEvent> publicationOutboxRelay() {
+        return relay;
     }
 }
