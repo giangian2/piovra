@@ -224,17 +224,60 @@ erDiagram
 - `idempotency_key`: backs `@Idempotent` on `ProductChangedHandler.handle(...)` - a generic claim
   table, not specific to any one event type.
 
-## 5. The outbox table (repeated per schema, not shared)
+## 5. `orders` schema
+
+```mermaid
+erDiagram
+    orders {
+        text id PK "the order's own ULID (CanonicalOrder.orderId), not a separate surrogate UUID"
+        text tenant_id
+        text channel_id
+        text channel_order_id
+        text status "NEW | PAID | SHIPPED | COMPLETED | CANCELLED | REFUNDED"
+        jsonb payload "full CanonicalOrder: buyer, shippingAddress, totals, lines, timestamps, stockApplied"
+        timestamptz updated_at
+    }
+    known_sku {
+        text tenant_id
+        text sku
+    }
+    outbox_event {
+        text id PK
+        text partition_key
+        text topic
+        text event_type
+        jsonb payload
+        jsonb headers
+        text status
+        timestamptz created_at
+        timestamptz published_at "nullable"
+        int attempts
+        text last_error "nullable"
+        timestamptz next_retry_at "nullable"
+    }
+```
+
+- `orders`: deduplicated on `(tenant_id, channel_id, channel_order_id)`, unique - the only defence
+  needed against at-least-once delivery and polling-window overlap (docs/07-order-flow.md section
+  3, `CanonicalOrder`'s own javadoc). Point lookup by natural key, full order kept as one JSONB
+  payload, same reasoning as `catalog.products`.
+- `known_sku`: order-service's own local read-model of "SKUs the catalog knows about" (existence
+  only, no payload), fed by consuming `catalog.product.changed` - `OrderIngestionService` uses it
+  to decide `MAPPED` vs `UNMAPPED` for a line, since order-service cannot query catalog-service
+  directly. `LineResolution.AMBIGUOUS`/`EXTERNAL` exist on the domain model but nothing produces
+  them yet - see section 8.
+
+## 6. The outbox table (repeated per schema, not shared)
 
 Every schema that writes to Kafka has its own `outbox_event` table (`catalog`, `channel_config`,
-`inventory`, `publication` - `orders` will get one too once `piovra-order` exists). Deliberately
-**not** a single shared table: each module's outbox lives in its own schema so "a module touches
-only its own schema" holds at the Postgres grant level, not just by convention
-(`OutboxEntity`'s own javadoc, `docs/12` section 5.5). All four are structurally identical; see
-`libs/piovra-outbox/src/main/java/dev/piovra/outbox/OutboxEntity.java` for the shared shape and
-`OutboxRelay`/`BackoffCalculator` for how `next_retry_at` and `FAILED` are used.
+`inventory`, `publication`, `orders`). Deliberately **not** a single shared table: each module's
+outbox lives in its own schema so "a module touches only its own schema" holds at the Postgres
+grant level, not just by convention (`OutboxEntity`'s own javadoc, `docs/12` section 5.5). All five
+are structurally identical; see `libs/piovra-outbox/src/main/java/dev/piovra/outbox/OutboxEntity.java`
+for the shared shape and `OutboxRelay`/`BackoffCalculator` for how `next_retry_at` and `FAILED` are
+used.
 
-## 6. Cross-schema logical relationships (no FK, kept in sync via Kafka)
+## 7. Cross-schema logical relationships (no FK, kept in sync via Kafka)
 
 | From | To | Kept in sync by |
 |---|---|---|
@@ -242,10 +285,11 @@ only its own schema" holds at the Postgres grant level, not just by convention
 | `publication.inventory_cache` | `inventory.stock_level.available` | `InventoryChangedConsumer` consuming `inventory.changed.v1` |
 | `publication.channel_listing` | `catalog.products` (via `tenant_id, sku`) | `ProductChangedConsumer` consuming `catalog.product.changed` |
 | `inventory.stock_level` | `catalog.products` (via `tenant_id, sku`) | `ProductChangedConsumer` (inventory's own) - ensures a zeroed row exists per known SKU |
+| `orders.known_sku` | `catalog.products` (via `tenant_id, sku`) | `ProductChangedConsumer` (order's own) - same existence-marker pattern as inventory's |
 | `catalog.products.payload.manufacturerProfileId` / `.responsiblePersonProfileId` | `catalog.compliance_profile.id` | validated in-process at write time (`ProductUpsertService`), same schema so a real FK would be possible but the product itself is JSONB |
-| `inventory.stock_movement` (`reason=ORDER`/`RETURN`) | `orders.*` (not built yet) | future: `piovra-order` publishing `order.accepted`, consumed by `OrderAcceptedHandler` |
+| `inventory.stock_movement` (`reason=ORDER`/`RETURN`) | `orders.orders` (via `tenant_id, orderId`) | `piovra-order` publishing `order.accepted`, consumed by `OrderAcceptedHandler` in piovra-inventory |
 
-## 7. Known gaps as of this writing
+## 8. Known gaps as of this writing
 
 - `channel_listing.published_snapshot` and `.snapshot_hash` exist in the table (per the original
   `docs/03-data-model.md` design) but are **not yet populated** - no reconciliation job exists yet
@@ -259,14 +303,29 @@ only its own schema" holds at the Postgres grant level, not just by convention
   only keep the *most recent* error, not a history, per docs/06-publish-flow.md section 7's mention
   of "a row in sync_errors" for `PERMANENT_ERROR`.
 - No admin/requeue tooling for a listing stuck in `ERROR` - same deliberate scope cut as the
-  outbox's own `FAILED` state (section 5): inspectable via SQL or `GET /v1/listings/{sku}` for now.
-- `services/piovra-order` does not exist yet, so `reserved`/`buffer` on `inventory.stock_level`
-  and the `orders` Flyway schema (already listed in `apps/piovra-core`'s `application.yml`) are
-  provisioned but unused.
+  outbox's own `FAILED` state (section 6): inspectable via SQL or `GET /v1/listings/{sku}` for now.
+- No real driver (`fetchOrders`/`fetchOrder`, polling or webhook) publishes `channel.order.received`
+  yet - `ChannelOrderReceivedConsumer` is inert until eBay/WooCommerce drivers exist (phase 3). The
+  only way orders enter the system today is `POST /v1/orders` (manual/ops).
+- SKU resolution in `OrderIngestionService` only ever produces `MAPPED`/`UNMAPPED`: `AMBIGUOUS`
+  would need resolving against `channel_listing.external_variant_ids`, data no real driver produces
+  yet either (docs/07-order-flow.md section 3). `EXTERNAL` (sold on a channel but not managed by
+  Piovra) is never produced at all in this iteration.
+- No proactive retroactive-resolution trigger for `UNMAPPED` lines: a line is only re-resolved when
+  the *same order* later gets a status update. A `ProductChanged` arriving for a previously-unknown
+  SKU does not by itself go back and fix already-ingested `UNMAPPED` lines.
+- `orders.stockApplied` is set optimistically (`true` as soon as `OrderAccepted` is queued on the
+  outbox) - there is no feedback loop from `piovra-inventory` back to `piovra-order` confirming the
+  movement actually landed.
+- No periodic reconciliation job (docs/07-order-flow.md section 4.4, docs/11-roadmap.md Phase 2) -
+  meaningless without a real driver to reconcile against.
 
-## 8. Reading publication status externally
+## 9. Reading status externally
 
-`GET /v1/listings/{sku}` (every channel) and `GET /v1/listings/{sku}/{channelId}` (one channel), on
-`piovra-publication`, return `ChannelListing` as-is - the intended way for another app or a CRM to
-read publication status and errors without any Kafka integration on their side. Same
-`X-Piovra-Tenant` header convention as every other REST endpoint in this repo.
+- **Publication**: `GET /v1/listings/{sku}` (every channel) and `GET /v1/listings/{sku}/{channelId}`
+  (one channel), on `piovra-publication`, return `ChannelListing` as-is.
+- **Orders**: `GET /v1/orders/{orderId}`, on `piovra-order`, returns `CanonicalOrder` as-is.
+
+Both are the intended way for another app or a CRM to read status and errors without any Kafka
+integration on their side - same `X-Piovra-Tenant` header convention as every other REST endpoint
+in this repo.

@@ -40,7 +40,8 @@ class PiovraCoreContextLoadIT extends PiovraIntegrationTest {
                         "catalogOutboxWriter",
                         "channelConfigOutboxWriter",
                         "publicationOutboxWriter",
-                        "inventoryOutboxWriter");
+                        "inventoryOutboxWriter",
+                        "orderOutboxWriter");
         assertThat(writers.values()).doesNotHaveDuplicates();
     }
 
@@ -53,6 +54,7 @@ class PiovraCoreContextLoadIT extends PiovraIntegrationTest {
                         "catalogOutboxRelay",
                         "channelConfigOutboxRelay",
                         "publicationOutboxRelay",
-                        "inventoryOutboxRelay");
+                        "inventoryOutboxRelay",
+                        "orderOutboxRelay");
     }
 }
