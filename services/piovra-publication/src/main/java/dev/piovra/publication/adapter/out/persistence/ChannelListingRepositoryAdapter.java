@@ -1,5 +1,6 @@
 package dev.piovra.publication.adapter.out.persistence;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
@@ -27,6 +28,13 @@ public class ChannelListingRepositoryAdapter implements ChannelListingRepository
         return jpaRepository
                 .findByTenantIdAndSkuAndChannelId(tenantId.value(), sku.value(), channelId.value())
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<ChannelListing> findAllForSku(TenantId tenantId, Sku sku) {
+        return jpaRepository.findByTenantIdAndSku(tenantId.value(), sku.value()).stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override

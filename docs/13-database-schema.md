@@ -164,6 +164,8 @@ erDiagram
         text snapshot_hash "nullable, reserved - not populated by the mapper yet"
         jsonb field_hashes "per-FieldGroup hash of the last published payload"
         text last_command_id "nullable"
+        text pending_operation "nullable, ChannelCommand.Operation of the outstanding command"
+        jsonb pending_field_hashes "nullable, desiredHashes computed when the outstanding command was emitted"
         text last_error_code "nullable"
         text last_error_message "nullable"
         timestamptz last_attempt_at "nullable"
@@ -209,6 +211,12 @@ erDiagram
 
 - `channel_listing`: the diff's memory - see `docs/03-data-model.md` section 3 and
   `ChannelListing` (domain). One row per `(tenant_id, sku, channel_id)`, unique.
+  `pending_operation`/`pending_field_hashes` carry the target operation and hashes from
+  command-emission (`PENDING`) time forward to result-consumption time, since `ChannelResult`
+  carries neither - `ChannelResultHandler` (consuming `Topics.CHANNEL_RESULT`) is what closes the
+  loop: `SUCCESS` promotes `pending_field_hashes` into `field_hashes` and sets `LISTED` (or `ENDED`
+  if `pending_operation=END`), `PERMANENT_ERROR`/`RETRYABLE_ERROR` set `ERROR` and increment
+  `retry_count`, `NOOP`/`STALE` are no-ops.
 - `channel_definition_cache` / `inventory_cache`: **local read-models**, not owned data - fed by
   consuming `channel.config.v1` / `inventory.changed.v1`, never written directly (see section 6).
   This is the pattern for "another service's data, without calling it synchronously"
@@ -239,16 +247,26 @@ only its own schema" holds at the Postgres grant level, not just by convention
 
 ## 7. Known gaps as of this writing
 
-- `channel_listing.published_snapshot`, `.snapshot_hash` and `.next_retry_at` exist in the table
-  (per the original `docs/03-data-model.md` design) but are **not yet populated** by
-  `ChannelListingRepositoryAdapter`'s mapper - there is no result-driven retry/backoff on a listing
-  today, only the outbox's own retry (a different, lower-level concern: getting the *command* to
-  Kafka, not getting a *response* back from the marketplace).
-- **`ChannelResult` (the event closing the driver → publication loop) has no consumer yet.**
-  `channel_listing.state` is only ever set to `PENDING` (when a command is emitted) - nothing moves
-  it to `LISTED`, `ERROR` or handles a `STALE` outcome. See the architecture note in the main
-  conversation for the recommended fix (a `ChannelResultConsumer`) before this table's data can be
-  trusted as "the current publication status."
+- `channel_listing.published_snapshot` and `.snapshot_hash` exist in the table (per the original
+  `docs/03-data-model.md` design) but are **not yet populated** - no reconciliation job exists yet
+  (docs/06-publish-flow.md section 8) to compare against a marketplace-side edit.
+- `channel_listing.next_retry_at` is likewise unpopulated: `RETRYABLE_ERROR` is currently handled
+  the same as `PERMANENT_ERROR` by `ChannelResultHandler` (mark `ERROR`, increment `retry_count`),
+  not routed through a separate retry-topic-with-backoff redelivery mechanism
+  (docs/09-errors-observability.md section 2) - that is consumer-side redelivery machinery, a
+  materially larger feature, deliberately deferred.
+- No `sync_errors` history table exists - `channel_listing.last_error_code`/`last_error_message`
+  only keep the *most recent* error, not a history, per docs/06-publish-flow.md section 7's mention
+  of "a row in sync_errors" for `PERMANENT_ERROR`.
+- No admin/requeue tooling for a listing stuck in `ERROR` - same deliberate scope cut as the
+  outbox's own `FAILED` state (section 5): inspectable via SQL or `GET /v1/listings/{sku}` for now.
 - `services/piovra-order` does not exist yet, so `reserved`/`buffer` on `inventory.stock_level`
   and the `orders` Flyway schema (already listed in `apps/piovra-core`'s `application.yml`) are
   provisioned but unused.
+
+## 8. Reading publication status externally
+
+`GET /v1/listings/{sku}` (every channel) and `GET /v1/listings/{sku}/{channelId}` (one channel), on
+`piovra-publication`, return `ChannelListing` as-is - the intended way for another app or a CRM to
+read publication status and errors without any Kafka integration on their side. Same
+`X-Piovra-Tenant` header convention as every other REST endpoint in this repo.

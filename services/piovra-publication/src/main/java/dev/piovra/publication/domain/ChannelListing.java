@@ -7,6 +7,7 @@ import java.util.Optional;
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Sku;
 import dev.piovra.common.TenantId;
+import dev.piovra.events.ChannelCommand;
 import dev.piovra.model.channel.FieldGroup;
 
 /**
@@ -19,6 +20,12 @@ import dev.piovra.model.channel.FieldGroup;
  * @param publishedRevision canonical revision of the last successful publish
  * @param fieldHashes per-field-group hashes of the last published payload. Comparing them with the
  *     desired hashes is the entire diff logic.
+ * @param pendingOperation the {@link ChannelCommand.Operation} of the outstanding command, null when
+ *     nothing is in flight. {@code ChannelResult} carries no operation of its own, so this is what
+ *     tells {@code ChannelResultHandler} whether a SUCCESS outcome means LISTED or ENDED.
+ * @param pendingFieldHashes the desired hashes computed when the outstanding command was emitted
+ *     ({@code PublicationDecision.desiredHashes}), promoted into {@code fieldHashes} once the driver
+ *     confirms success - see docs/06-publish-flow.md section 7.
  */
 public record ChannelListing(
         TenantId tenantId,
@@ -30,6 +37,8 @@ public record ChannelListing(
         long publishedRevision,
         Map<FieldGroup, String> fieldHashes,
         String lastCommandId,
+        ChannelCommand.Operation pendingOperation,
+        Map<FieldGroup, String> pendingFieldHashes,
         String lastErrorCode,
         String lastErrorMessage,
         int retryCount,
@@ -39,6 +48,7 @@ public record ChannelListing(
     public ChannelListing {
         externalVariantIds = externalVariantIds == null ? Map.of() : Map.copyOf(externalVariantIds);
         fieldHashes = fieldHashes == null ? Map.of() : Map.copyOf(fieldHashes);
+        pendingFieldHashes = pendingFieldHashes == null ? Map.of() : Map.copyOf(pendingFieldHashes);
     }
 
     public static ChannelListing notListed(TenantId tenant, Sku sku, ChannelId channelId) {
@@ -52,6 +62,8 @@ public record ChannelListing(
                 0L,
                 Map.of(),
                 null,
+                null,
+                Map.of(),
                 null,
                 null,
                 0,
@@ -75,7 +87,8 @@ public record ChannelListing(
         return Optional.ofNullable(externalId);
     }
 
-    public ChannelListing markPending(String commandId, Instant now) {
+    public ChannelListing markPending(
+            String commandId, ChannelCommand.Operation operation, Map<FieldGroup, String> desiredHashes, Instant now) {
         return new ChannelListing(
                 tenantId,
                 sku,
@@ -86,6 +99,8 @@ public record ChannelListing(
                 publishedRevision,
                 fieldHashes,
                 commandId,
+                operation,
+                desiredHashes,
                 lastErrorCode,
                 lastErrorMessage,
                 retryCount,
@@ -110,6 +125,29 @@ public record ChannelListing(
                 newHashes,
                 lastCommandId,
                 null,
+                Map.of(),
+                null,
+                null,
+                0,
+                now,
+                now);
+    }
+
+    /** Withdrawn from the channel - the successful outcome of an END command. */
+    public ChannelListing markEnded(Instant now) {
+        return new ChannelListing(
+                tenantId,
+                sku,
+                channelId,
+                externalId,
+                externalVariantIds,
+                ListingState.ENDED,
+                publishedRevision,
+                Map.of(),
+                lastCommandId,
+                null,
+                Map.of(),
+                null,
                 null,
                 0,
                 now,
@@ -127,6 +165,8 @@ public record ChannelListing(
                 publishedRevision,
                 fieldHashes,
                 lastCommandId,
+                null,
+                Map.of(),
                 code,
                 message,
                 retryCount + 1,
@@ -145,6 +185,8 @@ public record ChannelListing(
                 publishedRevision,
                 fieldHashes,
                 lastCommandId,
+                null,
+                Map.of(),
                 "BLOCKED_BY_RULE",
                 reason,
                 retryCount,
@@ -164,6 +206,8 @@ public record ChannelListing(
                 publishedRevision,
                 Map.of(),
                 lastCommandId,
+                pendingOperation,
+                pendingFieldHashes,
                 lastErrorCode,
                 lastErrorMessage,
                 retryCount,

@@ -58,6 +58,13 @@ public class ChannelListingEntity {
     @Column(name = "last_command_id")
     private String lastCommandId;
 
+    @Column(name = "pending_operation")
+    private String pendingOperation;
+
+    @Column(name = "pending_field_hashes", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String pendingFieldHashes;
+
     @Column(name = "last_error_code")
     private String lastErrorCode;
 
@@ -86,6 +93,8 @@ public class ChannelListingEntity {
             long publishedRevision,
             String fieldHashes,
             String lastCommandId,
+            String pendingOperation,
+            String pendingFieldHashes,
             String lastErrorCode,
             String lastErrorMessage,
             Instant lastAttemptAt,
@@ -102,6 +111,8 @@ public class ChannelListingEntity {
                 publishedRevision,
                 fieldHashes,
                 lastCommandId,
+                pendingOperation,
+                pendingFieldHashes,
                 lastErrorCode,
                 lastErrorMessage,
                 lastAttemptAt,
@@ -116,6 +127,8 @@ public class ChannelListingEntity {
             long publishedRevision,
             String fieldHashes,
             String lastCommandId,
+            String pendingOperation,
+            String pendingFieldHashes,
             String lastErrorCode,
             String lastErrorMessage,
             Instant lastAttemptAt,
@@ -127,6 +140,8 @@ public class ChannelListingEntity {
         this.publishedRevision = publishedRevision;
         this.fieldHashes = fieldHashes;
         this.lastCommandId = lastCommandId;
+        this.pendingOperation = pendingOperation;
+        this.pendingFieldHashes = pendingFieldHashes;
         this.lastErrorCode = lastErrorCode;
         this.lastErrorMessage = lastErrorMessage;
         this.lastAttemptAt = lastAttemptAt;
@@ -168,6 +183,14 @@ public class ChannelListingEntity {
 
     public String lastCommandId() {
         return lastCommandId;
+    }
+
+    public String pendingOperation() {
+        return pendingOperation;
+    }
+
+    public String pendingFieldHashes() {
+        return pendingFieldHashes;
     }
 
     public String lastErrorCode() {

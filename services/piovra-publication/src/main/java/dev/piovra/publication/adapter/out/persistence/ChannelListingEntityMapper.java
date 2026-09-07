@@ -14,6 +14,7 @@ import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
 import dev.piovra.common.Sku;
 import dev.piovra.common.TenantId;
+import dev.piovra.events.ChannelCommand;
 import dev.piovra.model.channel.FieldGroup;
 import dev.piovra.publication.domain.ChannelListing;
 import dev.piovra.publication.domain.ListingState;
@@ -42,6 +43,10 @@ public class ChannelListingEntityMapper {
                 listing.publishedRevision(),
                 write(listing.fieldHashes()),
                 listing.lastCommandId(),
+                listing.pendingOperation() == null
+                        ? null
+                        : listing.pendingOperation().name(),
+                write(listing.pendingFieldHashes()),
                 listing.lastErrorCode(),
                 listing.lastErrorMessage(),
                 listing.lastAttemptAt(),
@@ -57,6 +62,10 @@ public class ChannelListingEntityMapper {
                 listing.publishedRevision(),
                 write(listing.fieldHashes()),
                 listing.lastCommandId(),
+                listing.pendingOperation() == null
+                        ? null
+                        : listing.pendingOperation().name(),
+                write(listing.pendingFieldHashes()),
                 listing.lastErrorCode(),
                 listing.lastErrorMessage(),
                 listing.lastAttemptAt(),
@@ -75,6 +84,8 @@ public class ChannelListingEntityMapper {
                 entity.publishedRevision(),
                 readMap(entity.fieldHashes(), FIELD_HASHES_TYPE),
                 entity.lastCommandId(),
+                entity.pendingOperation() == null ? null : ChannelCommand.Operation.valueOf(entity.pendingOperation()),
+                readMap(entity.pendingFieldHashes(), FIELD_HASHES_TYPE),
                 entity.lastErrorCode(),
                 entity.lastErrorMessage(),
                 entity.retryCount(),

@@ -41,6 +41,7 @@ public final class DiffCalculator {
                             ChannelCommand.Operation.END,
                             CommandPriority.NORMAL,
                             Set.of(),
+                            Map.of(),
                             "product is " + product.status())
                     : PublicationDecision.skip("product not publishable and not published");
         }
@@ -57,6 +58,7 @@ public final class DiffCalculator {
                     ChannelCommand.Operation.END,
                     CommandPriority.HIGH,
                     Set.of(FieldGroup.STOCK),
+                    Map.of(),
                     "out of stock and endOnZero policy is active");
         }
 
@@ -69,6 +71,7 @@ public final class DiffCalculator {
                     ChannelCommand.Operation.UPSERT,
                     CommandPriority.NORMAL,
                     EnumSet.allOf(FieldGroup.class),
+                    desiredHashes,
                     "first publish on this channel");
         }
 
@@ -83,13 +86,17 @@ public final class DiffCalculator {
                     ? "stock below the critical threshold"
                     : "stock-only change";
             return PublicationDecision.publish(
-                    ChannelCommand.Operation.INVENTORY, CommandPriority.HIGH, changed, reason);
+                    ChannelCommand.Operation.INVENTORY, CommandPriority.HIGH, changed, desiredHashes, reason);
         }
 
         // 7. Price only: dedicated endpoint.
         if (changed.equals(Set.of(FieldGroup.PRICE))) {
             return PublicationDecision.publish(
-                    ChannelCommand.Operation.PRICE, CommandPriority.NORMAL, changed, "price-only change");
+                    ChannelCommand.Operation.PRICE,
+                    CommandPriority.NORMAL,
+                    changed,
+                    desiredHashes,
+                    "price-only change");
         }
 
         // 8. Everything else: a listing update. changedGroups reaches the driver, which will pick
@@ -99,6 +106,7 @@ public final class DiffCalculator {
                 ChannelCommand.Operation.UPSERT,
                 priority,
                 changed,
+                desiredHashes,
                 "changes in: " + changed.stream().map(Enum::name).sorted().toList());
     }
 

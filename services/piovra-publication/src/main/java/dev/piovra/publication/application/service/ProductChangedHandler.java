@@ -101,7 +101,8 @@ public class ProductChangedHandler {
                         objectMapper.convertValue(desired, PAYLOAD_TYPE),
                         0,
                         now);
-                channelListingRepository.save(listing.markPending(commandId, now));
+                channelListingRepository.save(
+                        listing.markPending(commandId, decision.operation(), decision.desiredHashes(), now));
                 outboxWriter.append(command);
             }
             case BLOCK -> channelListingRepository.save(listing.markBlocked(decision.reason(), now));

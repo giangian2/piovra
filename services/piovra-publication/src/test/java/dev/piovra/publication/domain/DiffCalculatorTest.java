@@ -51,6 +51,18 @@ class DiffCalculatorTest {
         assertThat(decision.shouldPublish()).isTrue();
         assertThat(decision.operation()).isEqualTo(ChannelCommand.Operation.UPSERT);
         assertThat(decision.changedGroups()).containsExactlyInAnyOrder(FieldGroup.values());
+        assertThat(decision.desiredHashes()).containsOnlyKeys(FieldGroup.values());
+    }
+
+    @Test
+    void an_end_decision_carries_no_hashes_since_nothing_needs_diffing_next_time() {
+        ChannelListing published = publishedWith(project(product(1, "T-shirt", "19.90"), 10), 1);
+        CanonicalProduct discontinued = product(2, "T-shirt", "19.90", ProductStatus.DISCONTINUED);
+
+        PublicationDecision decision = diff.decide(project(discontinued, 10), published, discontinued, policy());
+
+        assertThat(decision.operation()).isEqualTo(ChannelCommand.Operation.END);
+        assertThat(decision.desiredHashes()).isEmpty();
     }
 
     @Test
