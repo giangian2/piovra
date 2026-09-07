@@ -36,7 +36,11 @@ class PiovraCoreContextLoadIT extends PiovraIntegrationTest {
         Map<String, OutboxWriter> writers = context.getBeansOfType(OutboxWriter.class);
 
         assertThat(writers)
-                .containsOnlyKeys("catalogOutboxWriter", "channelConfigOutboxWriter", "publicationOutboxWriter");
+                .containsOnlyKeys(
+                        "catalogOutboxWriter",
+                        "channelConfigOutboxWriter",
+                        "publicationOutboxWriter",
+                        "inventoryOutboxWriter");
         assertThat(writers.values()).doesNotHaveDuplicates();
     }
 
@@ -45,6 +49,10 @@ class PiovraCoreContextLoadIT extends PiovraIntegrationTest {
         Map<String, OutboxRelay> relays = context.getBeansOfType(OutboxRelay.class);
 
         assertThat(relays)
-                .containsOnlyKeys("catalogOutboxRelay", "channelConfigOutboxRelay", "publicationOutboxRelay");
+                .containsOnlyKeys(
+                        "catalogOutboxRelay",
+                        "channelConfigOutboxRelay",
+                        "publicationOutboxRelay",
+                        "inventoryOutboxRelay");
     }
 }

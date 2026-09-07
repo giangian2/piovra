@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.piovra.common.Ids;
+import dev.piovra.common.Sku;
 import dev.piovra.crosscutting.annotation.Idempotent;
 import dev.piovra.events.ChannelCommand;
 import dev.piovra.events.ProductChanged;
@@ -18,6 +19,7 @@ import dev.piovra.model.channel.ChannelDefinition;
 import dev.piovra.outbox.OutboxWriter;
 import dev.piovra.publication.application.port.out.ChannelDefinitionCache;
 import dev.piovra.publication.application.port.out.ChannelListingRepository;
+import dev.piovra.publication.application.port.out.InventoryCache;
 import dev.piovra.publication.domain.ChannelListing;
 import dev.piovra.publication.domain.ChannelProjector;
 import dev.piovra.publication.domain.DesiredListing;
@@ -33,14 +35,14 @@ import dev.piovra.publication.domain.PublicationDecision;
  * this class's proxy from the outside, so the annotation actually applies (self-invocation would
  * silently skip it, docs/12-development-guidelines.md section 3.3).
  *
- * <p>No real inventory yet (docs plan, decision 3): {@code availableBySku} is always empty, so every
- * projected quantity is 0. Fine for proving first-publish and no-op; the stock-only/price-only
- * branches stay covered by {@code DiffCalculatorTest} until inventory exists.
+ * <p>{@code availableBySku} comes from {@link InventoryCache}, computed once per product (the SKU
+ * list is channel-independent) rather than once per channel.
  */
 @Service
 public class ProductChangedHandler {
 
     private final ChannelDefinitionCache channelDefinitionCache;
+    private final InventoryCache inventoryCache;
     private final ChannelListingRepository channelListingRepository;
     private final ChannelProjector channelProjector;
     private final DiffCalculator diffCalculator;
@@ -50,12 +52,14 @@ public class ProductChangedHandler {
 
     public ProductChangedHandler(
             ChannelDefinitionCache channelDefinitionCache,
+            InventoryCache inventoryCache,
             ChannelListingRepository channelListingRepository,
             ChannelProjector channelProjector,
             DiffCalculator diffCalculator,
             @Qualifier("publicationOutboxWriter") OutboxWriter outboxWriter,
             ObjectMapper objectMapper) {
         this.channelDefinitionCache = channelDefinitionCache;
+        this.inventoryCache = inventoryCache;
         this.channelListingRepository = channelListingRepository;
         this.channelProjector = channelProjector;
         this.diffCalculator = diffCalculator;
@@ -66,13 +70,14 @@ public class ProductChangedHandler {
     @Idempotent(key = "'pc:' + #event.eventId()")
     @Transactional
     public void handle(ProductChanged event) {
+        Map<Sku, Integer> availableBySku = inventoryCache.availableFor(event.tenantId(), event.variantSkus());
         for (ChannelDefinition channel : channelDefinitionCache.activeChannelsFor(event.tenantId())) {
-            handleChannel(event, channel);
+            handleChannel(event, channel, availableBySku);
         }
     }
 
-    private void handleChannel(ProductChanged event, ChannelDefinition channel) {
-        DesiredListing desired = channelProjector.project(event.product(), channel, Map.of());
+    private void handleChannel(ProductChanged event, ChannelDefinition channel, Map<Sku, Integer> availableBySku) {
+        DesiredListing desired = channelProjector.project(event.product(), channel, availableBySku);
         ChannelListing listing = channelListingRepository
                 .find(event.tenantId(), event.sku(), channel.channelId())
                 .orElseGet(() -> ChannelListing.notListed(event.tenantId(), event.sku(), channel.channelId()));

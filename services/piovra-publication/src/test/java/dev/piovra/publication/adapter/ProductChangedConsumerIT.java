@@ -29,6 +29,7 @@ import dev.piovra.model.channel.ChannelType;
 import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.publication.application.port.out.ChannelDefinitionCache;
 import dev.piovra.publication.application.port.out.ChannelListingRepository;
+import dev.piovra.publication.application.port.out.InventoryCache;
 import dev.piovra.publication.domain.ChannelListing;
 import dev.piovra.publication.domain.ListingState;
 import dev.piovra.testsupport.CanonicalProductFixtures;
@@ -55,6 +56,34 @@ class ProductChangedConsumerIT extends PiovraIntegrationTest {
 
     @Autowired
     private ChannelListingRepository channelListingRepository;
+
+    @Autowired
+    private InventoryCache inventoryCache;
+
+    @Test
+    void a_known_stock_level_is_projected_into_the_channel_command_quantity() throws Exception {
+        ChannelDefinition channel =
+                ChannelDefinitionFixtures.channel("stock-" + Ids.newId().toLowerCase(), ChannelType.WOOCOMMERCE);
+        channelDefinitionCache.upsert(channel);
+
+        CanonicalProduct product = CanonicalProductFixtures.simpleProduct("TEST-" + Ids.newId());
+        inventoryCache.upsert(product.tenantId(), product.variants().getFirst().sku(), 5);
+
+        send(ProductChanged.created(product));
+
+        String commandTopic = Topics.channelCommand(channel.type(), CommandPriority.NORMAL);
+        try (KafkaConsumer<String, String> consumer = testConsumer()) {
+            consumer.subscribe(List.of(commandTopic));
+            await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
+                boolean found = StreamSupport.stream(records.spliterator(), false)
+                        .anyMatch(
+                                record -> record.value().contains(product.sku().value())
+                                        && record.value().contains("\"quantity\":5"));
+                assertThat(found).isTrue();
+            });
+        }
+    }
 
     @Test
     void a_product_changed_message_produces_a_pending_listing_and_a_channel_command() throws Exception {
