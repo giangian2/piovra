@@ -6,6 +6,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 /**
  * Base for a module's outbox {@code @Configuration}: builds the writer+relay pair once, from a
  * plain constructor rather than generic {@code @Bean} factory-method parameters, so bean
@@ -24,8 +26,12 @@ public abstract class AbstractOutboxConfiguration<T extends OutboxEntity> {
             OutboxRepository<T> repository,
             Function<JpaOutboxWriter.OutboxRowData, T> entityFactory,
             ObjectMapper objectMapper,
-            KafkaTemplate<Object, Object> kafkaTemplate) {
+            KafkaTemplate<Object, Object> kafkaTemplate,
+            int maxAttempts,
+            String moduleName,
+            MeterRegistry meterRegistry) {
         this.writer = new JpaOutboxWriter<>(repository, entityFactory, objectMapper);
-        this.relay = new OutboxRelay<>(repository, kafkaTemplate, objectMapper);
+        this.relay = new OutboxRelay<>(
+                repository, kafkaTemplate, objectMapper, maxAttempts, new OutboxMetrics(meterRegistry, moduleName));
     }
 }

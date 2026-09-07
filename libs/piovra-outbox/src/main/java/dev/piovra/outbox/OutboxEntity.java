@@ -61,6 +61,9 @@ public abstract class OutboxEntity {
 
     private String lastError;
 
+    /** Null means "ready now". Set by {@link #scheduleRetry(Instant)} after a retryable failure. */
+    private Instant nextRetryAt;
+
     protected OutboxEntity() {}
 
     protected OutboxEntity(
@@ -106,14 +109,30 @@ public abstract class OutboxEntity {
         return attempts;
     }
 
+    public Instant nextRetryAt() {
+        return nextRetryAt;
+    }
+
     public void markPublished() {
         this.status = OutboxStatus.PUBLISHED;
         this.publishedAt = Instant.now();
         this.lastError = null;
     }
 
+    /** Records the failure. Deciding whether to retry or dead-letter is the relay's policy, not this
+     * entity's - see {@link #scheduleRetry(Instant)} and {@link #markPermanentlyFailed()}. */
     public void markFailed(String error) {
         this.attempts++;
         this.lastError = error;
+    }
+
+    /** Stays {@link OutboxStatus#PENDING}, picked up again no earlier than {@code nextRetryAt}. */
+    public void scheduleRetry(Instant nextRetryAt) {
+        this.nextRetryAt = nextRetryAt;
+    }
+
+    /** Terminal: no longer fetched by the relay. */
+    public void markPermanentlyFailed() {
+        this.status = OutboxStatus.FAILED;
     }
 }

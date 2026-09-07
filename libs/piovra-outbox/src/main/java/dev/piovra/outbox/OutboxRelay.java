@@ -1,5 +1,6 @@
 package dev.piovra.outbox;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -7,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -25,22 +27,37 @@ import dev.piovra.kafka.support.KafkaHeaderSupport;
  *
  * <p>{@code tryLock} rather than {@code synchronized}, per docs/12 section 5.3: it avoids two ticks
  * overlapping if a publish run takes longer than the poll interval, without pinning a virtual thread.
+ *
+ * <p>A failure schedules an exponential-backoff retry ({@link BackoffCalculator}) rather than being
+ * retried on every single tick forever; after {@code maxAttempts} the row is dead-lettered
+ * ({@link OutboxStatus#FAILED}) and stops being fetched - inspectable via SQL, no admin tooling yet.
  */
 public class OutboxRelay<T extends OutboxEntity> {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
     private static final TypeReference<Map<String, String>> HEADER_MAP_TYPE = new TypeReference<>() {};
+    private static final Pageable TOP_100 = Pageable.ofSize(100);
 
     private final OutboxRepository<T> repository;
     private final KafkaTemplate<Object, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final int maxAttempts;
+    private final BackoffCalculator backoffCalculator;
+    private final OutboxMetrics metrics;
     private final ReentrantLock lock = new ReentrantLock();
 
     public OutboxRelay(
-            OutboxRepository<T> repository, KafkaTemplate<Object, Object> kafkaTemplate, ObjectMapper objectMapper) {
+            OutboxRepository<T> repository,
+            KafkaTemplate<Object, Object> kafkaTemplate,
+            ObjectMapper objectMapper,
+            int maxAttempts,
+            OutboxMetrics metrics) {
         this.repository = repository;
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
+        this.maxAttempts = maxAttempts;
+        this.backoffCalculator = new BackoffCalculator();
+        this.metrics = metrics;
     }
 
     @Scheduled(fixedDelayString = "${piovra.outbox.relay.poll-interval-ms:500}")
@@ -49,7 +66,7 @@ public class OutboxRelay<T extends OutboxEntity> {
             return;
         }
         try {
-            List<T> pending = repository.findTop100ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
+            List<T> pending = repository.findReadyToPublish(OutboxStatus.PENDING, Instant.now(), TOP_100);
             pending.forEach(this::publish);
         } finally {
             lock.unlock();
@@ -65,8 +82,25 @@ public class OutboxRelay<T extends OutboxEntity> {
             row.markPublished();
             repository.save(row);
         } catch (Exception e) {
-            log.warn("outbox publish failed, will retry on the next tick: id={} topic={}", row.id(), row.topic(), e);
             row.markFailed(e.getMessage());
+            if (row.attempts() >= maxAttempts) {
+                row.markPermanentlyFailed();
+                metrics.permanentFailure();
+                log.error(
+                        "outbox row dead-lettered after {} attempts: id={} topic={}",
+                        row.attempts(),
+                        row.id(),
+                        row.topic(),
+                        e);
+            } else {
+                row.scheduleRetry(Instant.now().plus(backoffCalculator.compute(row.attempts())));
+                log.warn(
+                        "outbox publish failed, will retry with backoff: id={} topic={} attempt={}",
+                        row.id(),
+                        row.topic(),
+                        row.attempts(),
+                        e);
+            }
             repository.save(row);
         }
     }
