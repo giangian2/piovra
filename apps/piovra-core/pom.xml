@@ -54,6 +54,11 @@
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5</artifactId>
     </dependency>
+    <dependency>
+      <groupId>dev.piovra</groupId>
+      <artifactId>piovra-test-support</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
