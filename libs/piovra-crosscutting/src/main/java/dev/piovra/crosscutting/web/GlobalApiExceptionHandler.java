@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
@@ -14,9 +15,15 @@ import dev.piovra.common.PiovraException;
  * Maps the {@link PiovraException} hierarchy's {@link ErrorClass} to an HTTP status and a
  * {@link ProblemDetail} body, so no controller writes its own try/catch (docs/12-development-guidelines.md
  * section 5.2). Never leaks a stack trace in the response body.
+ *
+ * <p>Extends {@link ResponseEntityExceptionHandler} because Spring's own exceptions already carry
+ * the status they mean - a controller's {@code ResponseStatusException(NOT_FOUND)}, a failed
+ * {@code @Valid} body, an unreadable payload. Without the base class the catch-all below is the
+ * most specific handler for all of them and answers 500, turning every client mistake into what
+ * looks like our bug.
  */
 @RestControllerAdvice
-public class GlobalApiExceptionHandler {
+public class GlobalApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalApiExceptionHandler.class);
 
