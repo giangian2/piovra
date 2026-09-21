@@ -13,12 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.Ids;
 import dev.piovra.inventory.adapter.in.web.StockLine;
 import dev.piovra.inventory.adapter.in.web.StockSetBatchRequest;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class StockControllerTest extends PiovraIntegrationTest {

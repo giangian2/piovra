@@ -2,13 +2,13 @@ package dev.piovra.outbox;
 
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
 import dev.piovra.events.DomainEvent;
 import dev.piovra.kafka.support.KafkaHeaderSupport;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Generic {@link OutboxWriter}: serializes the event and the standard headers to JSON, then hands a
@@ -44,7 +44,7 @@ public class JpaOutboxWriter<T extends OutboxEntity> implements OutboxWriter {
     private String write(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(ErrorClass.INTERNAL, "OUTBOX_SERIALIZATION", "cannot serialize outbox row", e);
         }
     }

@@ -4,12 +4,12 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
 import dev.piovra.model.product.CanonicalProduct;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class ProductEntityMapper {
@@ -41,7 +41,7 @@ public class ProductEntityMapper {
     private String write(CanonicalProduct product) {
         try {
             return objectMapper.writeValueAsString(product);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(ErrorClass.INTERNAL, "PRODUCT_SERIALIZATION", "cannot serialize product", e);
         }
     }
@@ -49,7 +49,7 @@ public class ProductEntityMapper {
     private CanonicalProduct read(String payload) {
         try {
             return objectMapper.readValue(payload, CanonicalProduct.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(ErrorClass.INTERNAL, "PRODUCT_DESERIALIZATION", "cannot deserialize product", e);
         }
     }

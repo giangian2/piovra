@@ -7,9 +7,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.Ids;
 import dev.piovra.common.Sku;
 import dev.piovra.crosscutting.annotation.Idempotent;
@@ -25,6 +22,9 @@ import dev.piovra.publication.domain.ChannelProjector;
 import dev.piovra.publication.domain.DesiredListing;
 import dev.piovra.publication.domain.DiffCalculator;
 import dev.piovra.publication.domain.PublicationDecision;
+
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * For every active channel of the product, projects, diffs and - when the diff says so - emits a

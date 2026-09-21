@@ -4,9 +4,8 @@ import java.util.function.Function;
 
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.micrometer.core.instrument.MeterRegistry;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Base for a module's outbox {@code @Configuration}: builds the writer+relay pair once, from a

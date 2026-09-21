@@ -12,13 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.channelconfig.adapter.in.web.ChannelDefinitionRequest;
 import dev.piovra.common.Ids;
 import dev.piovra.model.channel.ChannelDefinition;
 import dev.piovra.testsupport.ChannelDefinitionFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 /** Exercises the real wire format end to end, mirroring catalog's {@code ProductControllerTest}. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

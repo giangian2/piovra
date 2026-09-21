@@ -11,13 +11,13 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.converter.RecordMessageConverter;
-import org.springframework.kafka.support.converter.StringJsonMessageConverter;
-import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
+import org.springframework.kafka.support.converter.StringJacksonJsonMessageConverter;
+import org.springframework.kafka.support.mapping.JacksonJavaTypeMapper;
 import org.springframework.util.backoff.ExponentialBackOff;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.events.Topics;
+
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Shared Kafka plumbing: JSON (de)serialization for typed listener parameters, MDC propagation, and
@@ -36,9 +36,11 @@ public class KafkaSupportAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public RecordMessageConverter kafkaRecordMessageConverter(ObjectMapper objectMapper) {
-        StringJsonMessageConverter converter = new StringJsonMessageConverter(objectMapper);
-        converter.getTypeMapper().setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence.INFERRED);
+    public RecordMessageConverter kafkaRecordMessageConverter(JsonMapper jsonMapper) {
+        // JsonMapper, not the wider ObjectMapper the rest of the code injects: this is the exact
+        // type Spring Kafka's converter demands, and the one Boot registers as a bean anyway.
+        StringJacksonJsonMessageConverter converter = new StringJacksonJsonMessageConverter(jsonMapper);
+        converter.getTypeMapper().setTypePrecedence(JacksonJavaTypeMapper.TypePrecedence.INFERRED);
         return converter;
     }
 

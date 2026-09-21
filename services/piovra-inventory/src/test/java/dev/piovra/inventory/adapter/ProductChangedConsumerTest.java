@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.Ids;
 import dev.piovra.common.TenantId;
 import dev.piovra.events.ProductChanged;
@@ -21,6 +19,8 @@ import dev.piovra.inventory.adapter.out.persistence.StockLevelJpaRepository;
 import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.testsupport.CanonicalProductFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 class ProductChangedConsumerTest extends PiovraIntegrationTest {
 

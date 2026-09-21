@@ -14,9 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.Ids;
 import dev.piovra.common.Money;
 import dev.piovra.common.Sku;
@@ -29,6 +26,9 @@ import dev.piovra.order.adapter.in.web.OrderIngestRequest;
 import dev.piovra.order.adapter.in.web.OrderLineRequest;
 import dev.piovra.order.application.port.out.KnownSkuRepository;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OrderControllerTest extends PiovraIntegrationTest {

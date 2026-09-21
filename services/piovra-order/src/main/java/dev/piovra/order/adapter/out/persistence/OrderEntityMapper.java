@@ -2,12 +2,12 @@ package dev.piovra.order.adapter.out.persistence;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
 import dev.piovra.model.order.CanonicalOrder;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class OrderEntityMapper {
@@ -39,7 +39,7 @@ public class OrderEntityMapper {
     private String write(CanonicalOrder order) {
         try {
             return objectMapper.writeValueAsString(order);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(ErrorClass.INTERNAL, "ORDER_SERIALIZATION", "cannot serialize order", e);
         }
     }
@@ -47,7 +47,7 @@ public class OrderEntityMapper {
     private CanonicalOrder read(String payload) {
         try {
             return objectMapper.readValue(payload, CanonicalOrder.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(ErrorClass.INTERNAL, "ORDER_DESERIALIZATION", "cannot deserialize order", e);
         }
     }

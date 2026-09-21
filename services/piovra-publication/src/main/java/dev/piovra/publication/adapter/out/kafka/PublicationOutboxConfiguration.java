@@ -6,13 +6,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.outbox.AbstractOutboxConfiguration;
 import dev.piovra.outbox.OutboxRelay;
 import dev.piovra.outbox.OutboxWriter;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 public class PublicationOutboxConfiguration extends AbstractOutboxConfiguration<PublicationOutboxEvent> {

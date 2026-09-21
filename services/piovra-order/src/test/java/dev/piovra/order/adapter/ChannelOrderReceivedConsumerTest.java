@@ -18,8 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Ids;
 import dev.piovra.common.Money;
@@ -37,6 +35,8 @@ import dev.piovra.model.order.OrderTotals;
 import dev.piovra.order.application.port.out.KnownSkuRepository;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 import dev.piovra.testsupport.PiovraKafkaContainer;
+
+import tools.jackson.databind.ObjectMapper;
 
 class ChannelOrderReceivedConsumerTest extends PiovraIntegrationTest {
 

@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.Ids;
 import dev.piovra.events.ChannelConfigChanged;
 import dev.piovra.events.Topics;
@@ -18,6 +16,8 @@ import dev.piovra.model.channel.ChannelDefinition;
 import dev.piovra.publication.application.port.out.ChannelDefinitionCache;
 import dev.piovra.testsupport.ChannelDefinitionFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 class ChannelConfigConsumerTest extends PiovraIntegrationTest {
 

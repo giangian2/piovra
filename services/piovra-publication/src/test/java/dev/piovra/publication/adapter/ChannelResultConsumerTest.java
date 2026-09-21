@@ -12,8 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.Ids;
@@ -28,6 +26,8 @@ import dev.piovra.publication.application.port.out.ChannelListingRepository;
 import dev.piovra.publication.domain.ChannelListing;
 import dev.piovra.publication.domain.ListingState;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 /** Closes the loop docs/06-publish-flow.md section 7 describes: before ChannelResultHandler existed,
  * a listing stayed PENDING forever regardless of what the driver actually reported. */

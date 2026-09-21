@@ -5,14 +5,14 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
 import dev.piovra.common.TenantId;
 import dev.piovra.model.channel.ChannelDefinition;
 import dev.piovra.publication.application.port.out.ChannelDefinitionCache;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Repository
 public class ChannelDefinitionCacheAdapter implements ChannelDefinitionCache {
@@ -54,7 +54,7 @@ public class ChannelDefinitionCacheAdapter implements ChannelDefinitionCache {
     private String write(ChannelDefinition definition) {
         try {
             return objectMapper.writeValueAsString(definition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(
                     ErrorClass.INTERNAL, "CHANNEL_CACHE_SERIALIZATION", "cannot serialize channel definition", e);
         }
@@ -63,7 +63,7 @@ public class ChannelDefinitionCacheAdapter implements ChannelDefinitionCache {
     private ChannelDefinition read(String payload) {
         try {
             return objectMapper.readValue(payload, ChannelDefinition.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(
                     ErrorClass.INTERNAL, "CHANNEL_CACHE_DESERIALIZATION", "cannot deserialize channel definition", e);
         }

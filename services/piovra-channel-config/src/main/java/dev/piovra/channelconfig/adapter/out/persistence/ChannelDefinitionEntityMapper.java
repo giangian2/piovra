@@ -4,12 +4,12 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
 import dev.piovra.model.channel.ChannelDefinition;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class ChannelDefinitionEntityMapper {
@@ -40,7 +40,7 @@ public class ChannelDefinitionEntityMapper {
     private String write(ChannelDefinition definition) {
         try {
             return objectMapper.writeValueAsString(definition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(
                     ErrorClass.INTERNAL, "CHANNEL_CONFIG_SERIALIZATION", "cannot serialize channel definition", e);
         }
@@ -49,7 +49,7 @@ public class ChannelDefinitionEntityMapper {
     private ChannelDefinition read(String payload) {
         try {
             return objectMapper.readValue(payload, ChannelDefinition.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(
                     ErrorClass.INTERNAL, "CHANNEL_CONFIG_DESERIALIZATION", "cannot deserialize channel definition", e);
         }

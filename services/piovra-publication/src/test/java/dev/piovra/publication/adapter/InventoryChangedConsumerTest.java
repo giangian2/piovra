@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Ids;
 import dev.piovra.common.Sku;
@@ -20,6 +18,8 @@ import dev.piovra.events.InventoryChanged;
 import dev.piovra.events.Topics;
 import dev.piovra.publication.application.port.out.InventoryCache;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 class InventoryChangedConsumerTest extends PiovraIntegrationTest {
 

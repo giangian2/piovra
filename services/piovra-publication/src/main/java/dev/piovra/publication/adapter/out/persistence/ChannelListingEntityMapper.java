@@ -5,10 +5,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.ErrorClass;
 import dev.piovra.common.PiovraException;
@@ -18,6 +14,10 @@ import dev.piovra.events.ChannelCommand;
 import dev.piovra.model.channel.FieldGroup;
 import dev.piovra.publication.domain.ChannelListing;
 import dev.piovra.publication.domain.ListingState;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class ChannelListingEntityMapper {
@@ -96,7 +96,7 @@ public class ChannelListingEntityMapper {
     private String write(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(
                     ErrorClass.INTERNAL, "CHANNEL_LISTING_SERIALIZATION", "cannot serialize channel listing", e);
         }
@@ -108,7 +108,7 @@ public class ChannelListingEntityMapper {
         }
         try {
             return objectMapper.readValue(json, type);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PiovraException(
                     ErrorClass.INTERNAL, "CHANNEL_LISTING_DESERIALIZATION", "cannot deserialize channel listing", e);
         }

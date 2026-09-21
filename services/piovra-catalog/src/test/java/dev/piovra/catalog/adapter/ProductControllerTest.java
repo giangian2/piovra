@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.catalog.adapter.in.web.ProductRequest;
 import dev.piovra.catalog.adapter.out.persistence.ComplianceProfileRepositoryAdapter;
 import dev.piovra.common.Ids;
@@ -25,6 +23,8 @@ import dev.piovra.model.compliance.ComplianceProfileType;
 import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.testsupport.CanonicalProductFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Exercises the real wire format end to end: the same {@link ObjectMapper} bean the controller uses
