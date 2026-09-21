@@ -1,0 +1,165 @@
+[
+  {
+    "id": 1001,
+    "number": "1001",
+    "status": "processing",
+    "currency": "EUR",
+    "date_created_gmt": "2026-09-21T10:23:02",
+    "date_modified_gmt": "2026-09-21T10:25:40",
+    "customer_id": 42,
+    "total": "70.00",
+    "shipping_total": "5.00",
+    "total_tax": "12.00",
+    "billing": {
+      "first_name": "Mario",
+      "last_name": "Rossi",
+      "address_1": "Via Fatturazione 9",
+      "city": "Torino",
+      "state": "TO",
+      "postcode": "10100",
+      "country": "IT",
+      "email": "mario@test.it",
+      "phone": "+39 011 000000"
+    },
+    "shipping": {
+      "first_name": "Mario",
+      "last_name": "Rossi",
+      "address_1": "Via Roma 1",
+      "address_2": "Scala B",
+      "city": "Milano",
+      "state": "MI",
+      "postcode": "20100",
+      "country": "IT",
+      "phone": "+39 02 111111"
+    },
+    "line_items": [
+      {
+        "id": 77,
+        "name": "T-shirt base",
+        "product_id": 501,
+        "variation_id": 0,
+        "quantity": 3,
+        "sku": "TSHIRT-BASE",
+        "price": 21.5,
+        "subtotal": "64.50",
+        "total": "59.70"
+      },
+      {
+        "id": 78,
+        "name": "Riga rimborsata",
+        "product_id": 502,
+        "variation_id": 0,
+        "quantity": 0,
+        "sku": "TSHIRT-REFUNDED",
+        "price": 10.0,
+        "subtotal": "0.00",
+        "total": "0.00"
+      }
+    ]
+  },
+  {
+    "id": 1002,
+    "number": "1002",
+    "status": "awaiting-shipment",
+    "currency": "EUR",
+    "date_created_gmt": "2026-09-21T11:00:00",
+    "date_modified_gmt": "2026-09-21T11:05:00",
+    "customer_id": 42,
+    "total": "12.20",
+    "shipping_total": "0.00",
+    "total_tax": "2.20",
+    "billing": {
+      "first_name": "Mario",
+      "last_name": "Rossi",
+      "address_1": "Via Fatturazione 9",
+      "city": "Torino",
+      "state": "TO",
+      "postcode": "10100",
+      "country": "IT",
+      "email": "mario@test.it"
+    },
+    "shipping": {
+      "first_name": "Mario",
+      "last_name": "Rossi",
+      "address_1": "Via Roma 1",
+      "city": "Milano",
+      "state": "MI",
+      "postcode": "20100",
+      "country": "IT"
+    },
+    "line_items": [
+      {
+        "id": 79,
+        "name": "Spilla senza codice",
+        "product_id": 503,
+        "variation_id": 9001,
+        "quantity": 1,
+        "sku": "",
+        "price": 10.0,
+        "subtotal": "10.00",
+        "total": "10.00"
+      }
+    ]
+  },
+  {
+    "id": 1003,
+    "number": "1003",
+    "status": "completed",
+    "currency": "EUR",
+    "date_created_gmt": "2026-09-21T12:00:00",
+    "date_modified_gmt": "2026-09-21T12:30:00",
+    "customer_id": 0,
+    "total": "9.90",
+    "shipping_total": "0.00",
+    "total_tax": "1.78",
+    "billing": {
+      "first_name": "Anna",
+      "last_name": "Bianchi",
+      "address_1": "Corso Buenos Aires 33",
+      "city": "Milano",
+      "state": "MI",
+      "postcode": "20124",
+      "country": "IT",
+      "email": "anna@test.it",
+      "phone": "+39 02 222222"
+    },
+    "shipping": {
+      "first_name": "",
+      "last_name": "",
+      "address_1": "",
+      "address_2": "",
+      "city": "",
+      "state": "",
+      "postcode": "",
+      "country": ""
+    },
+    "line_items": [
+      {
+        "id": 80,
+        "name": "Ebook",
+        "product_id": 504,
+        "variation_id": 0,
+        "quantity": 1,
+        "sku": "EBOOK-01",
+        "price": 9.9,
+        "subtotal": "9.90",
+        "total": "9.90"
+      }
+    ]
+  },
+  {
+    "id": 1004,
+    "number": "",
+    "status": "checkout-draft",
+    "currency": "EUR",
+    "date_created_gmt": "2026-09-21T13:00:00",
+    "date_modified_gmt": "2026-09-21T13:00:00",
+    "customer_id": 0,
+    "total": "0.00",
+    "shipping_total": "0.00",
+    "total_tax": "0.00",
+    "billing": {},
+    "shipping": {},
+    "line_items": []
+  }
+]

@@ -2,7 +2,14 @@ package dev.piovra.driver.woocommerce;
 
 import java.net.SocketTimeoutException;
 import java.net.http.HttpTimeoutException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,10 +31,13 @@ import dev.piovra.driver.spi.UpdateResult;
 import dev.piovra.driver.spi.UpsertResult;
 import dev.piovra.model.channel.ChannelType;
 
+import tools.jackson.databind.JsonNode;
+
 /**
  * WooCommerce driver (REST API v3).
  *
- * <p><b>Status: skeleton.</b> The structure and the pitfalls are settled, the method bodies are not.
+ * <p><b>Status: orders only.</b> {@code fetchOrders}/{@code fetchOrder} are implemented; the
+ * outbound write path (upsert, inventory, price, end) is still a skeleton.
  *
  * <p>Implementation notes, from docs/08-marketplace-drivers.md:
  *
@@ -45,6 +55,12 @@ import dev.piovra.model.channel.ChannelType;
  * </ul>
  */
 public class WooCommerceDriver implements MarketplaceDriver {
+
+    /** The /orders endpoint caps per_page at 100. */
+    private static final int MAX_PAGE_SIZE = 100;
+
+    /** Woo wants a local-looking timestamp; dates_are_gmt=true says to read it as UTC. */
+    private static final DateTimeFormatter GMT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     private static final DriverCapabilities CAPABILITIES = new DriverCapabilities(
             true, // supportsVariations
@@ -108,16 +124,56 @@ public class WooCommerceDriver implements MarketplaceDriver {
 
     @Override
     public OrderPage fetchOrders(ChannelContext ctx, OrderQuery query) {
-        // TODO phase 2: GET /orders?modified_after=&dates_are_gmt=true&orderby=modified&order=asc
-        //  &per_page=100. The cursor is the timestamp of the last order on the page.
-        throw new UnsupportedOperationException("WooCommerceDriver.fetchOrders: not implemented yet");
+        WooOrderCursor cursor = WooOrderCursor.parse(query.cursor(), query.modifiedFrom());
+        int pageSize = query.pageSize() > 0 ? Math.min(query.pageSize(), MAX_PAGE_SIZE) : MAX_PAGE_SIZE;
+
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("modified_after", GMT_FORMAT.format(cursor.modifiedAfter().atOffset(ZoneOffset.UTC)));
+        // Without this flag Woo reads the filter in the store's local timezone and silently shifts
+        // the whole window by the site's UTC offset.
+        params.put("dates_are_gmt", "true");
+        params.put("orderby", "modified");
+        params.put("order", "asc");
+        params.put("per_page", String.valueOf(pageSize));
+        params.put("page", String.valueOf(cursor.page()));
+
+        WooCommerceApiClient.WooResponse response = client.get(ctx, "/orders", params);
+        JsonNode array = response.body();
+
+        List<RemoteOrder> orders = new ArrayList<>();
+        Instant lastModified = null;
+        for (JsonNode node : array) {
+            lastModified = modifiedAt(node);
+            WooOrderMapper.toCanonicalOrder(node, ctx.tenantId(), ctx.channelId())
+                    .map(order -> new RemoteOrder(order, node.toString()))
+                    .ifPresent(orders::add);
+        }
+
+        boolean pageWasFull = array.size() == pageSize;
+        return new OrderPage(
+                orders,
+                cursor.next(lastModified, pageWasFull),
+                response.intHeader("X-WP-Total").orElse(orders.size()));
     }
 
     @Override
     public Optional<RemoteOrder> fetchOrder(ChannelContext ctx, String channelOrderId) {
-        // TODO phase 2: GET /orders/{id}. Used by the webhook, which is only an accelerator: the
-        //  webhook payload is never treated as authoritative.
-        throw new UnsupportedOperationException("WooCommerceDriver.fetchOrder: not implemented yet");
+        JsonNode node;
+        try {
+            node = client.get(ctx, "/orders/" + channelOrderId, Map.of()).body();
+        } catch (WooApiException e) {
+            if (e.status() == 404) {
+                return Optional.empty();
+            }
+            throw e;
+        }
+        return WooOrderMapper.toCanonicalOrder(node, ctx.tenantId(), ctx.channelId())
+                .map(order -> new RemoteOrder(order, node.toString()));
+    }
+
+    private static Instant modifiedAt(JsonNode order) {
+        String raw = order.path("date_modified_gmt").asString("");
+        return raw.isBlank() ? null : LocalDateTime.parse(raw).toInstant(ZoneOffset.UTC);
     }
 
     @Override

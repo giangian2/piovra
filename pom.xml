@@ -37,6 +37,7 @@
     <univocity.version>2.9.1</univocity.version>
     <archunit.version>1.5.0</archunit.version>
     <awaitility.version>4.2.2</awaitility.version>
+    <wiremock.version>3.13.1</wiremock.version>
 
     <spotless.version>3.10.1</spotless.version>
     <surefire.version>3.5.2</surefire.version>
@@ -115,6 +116,14 @@
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
         <version>${awaitility.version}</version>
+      </dependency>
+      <!-- Standalone (shaded) on purpose: WireMock embeds its own Jetty, and the plain artifact
+           would drag a second one onto the classpath of anything that also runs Spring Boot. -->
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${wiremock.version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
