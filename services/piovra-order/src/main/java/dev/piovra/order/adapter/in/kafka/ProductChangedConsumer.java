@@ -8,7 +8,10 @@ import dev.piovra.events.ProductChanged;
 import dev.piovra.events.Topics;
 import dev.piovra.order.application.service.KnownSkuInitializer;
 
-@Component
+// Named explicitly: three modules each consume ProductChanged, and in the combined piovra-core
+// deployable the default bean name (the class's simple name) is the same for all three. Same
+// convention as the per-module outbox beans.
+@Component("orderProductChangedConsumer")
 public class ProductChangedConsumer {
 
     private final KnownSkuInitializer initializer;
