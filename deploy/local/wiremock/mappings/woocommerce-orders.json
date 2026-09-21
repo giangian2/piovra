@@ -1,0 +1,69 @@
+{
+  "mappings": [
+    {
+      "name": "WooCommerce: one order, so the connector has something to poll",
+      "request": {
+        "method": "GET",
+        "urlPath": "/wp-json/wc/v3/orders",
+        "queryParameters": {
+          "dates_are_gmt": {
+            "equalTo": "true"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-WP-Total": "1"
+        },
+        "jsonBody": [
+          {
+            "id": 4711,
+            "number": "4711",
+            "status": "processing",
+            "currency": "EUR",
+            "date_created_gmt": "2026-09-21T09:00:00",
+            "date_modified_gmt": "2026-09-21T09:05:00",
+            "customer_id": 7,
+            "total": "59.70",
+            "shipping_total": "0.00",
+            "total_tax": "0.00",
+            "billing": {
+              "first_name": "Mario",
+              "last_name": "Rossi",
+              "address_1": "Via Roma 1",
+              "city": "Milano",
+              "state": "MI",
+              "postcode": "20100",
+              "country": "IT",
+              "email": "mario@test.it"
+            },
+            "shipping": {
+              "first_name": "Mario",
+              "last_name": "Rossi",
+              "address_1": "Via Roma 1",
+              "city": "Milano",
+              "state": "MI",
+              "postcode": "20100",
+              "country": "IT"
+            },
+            "line_items": [
+              {
+                "id": 77,
+                "name": "T-shirt base",
+                "product_id": 501,
+                "variation_id": 0,
+                "quantity": 3,
+                "sku": "TSHIRT-BASE",
+                "price": 19.9,
+                "subtotal": "59.70",
+                "total": "59.70"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

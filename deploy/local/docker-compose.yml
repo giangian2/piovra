@@ -71,7 +71,8 @@ services:
     command: ["redis-server", "--appendonly", "no"]
 
   minio:
-    image: minio/minio:latest
+    # quay.io is MinIO's own registry; Docker Hub's minio/minio is not pullable everywhere.
+    image: quay.io/minio/minio:latest
     container_name: piovra-minio
     ports: ["9000:9000", "9001:9001"]
     environment:
@@ -86,8 +87,10 @@ services:
   wiremock:
     image: wiremock/wiremock:latest
     container_name: piovra-wiremock
-    ports: ["8089:8080"]
-    command: ["--global-response-templating", "--verbose"]
+    # 8443 is HTTPS: the WooCommerce driver refuses plain HTTP, because the consumer key and
+    # secret travel in an Authorization header.
+    ports: ["8089:8080", "8443:8443"]
+    command: ["--global-response-templating", "--verbose", "--https-port", "8443"]
     volumes:
       - ./wiremock:/home/wiremock
 
