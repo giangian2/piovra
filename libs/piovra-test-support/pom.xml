@@ -22,6 +22,10 @@
       <artifactId>spring-boot-test</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-junit-jupiter</artifactId>
     </dependency>
@@ -32,6 +36,15 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-postgresql</artifactId>
+    </dependency>
+    <!-- The JDBC driver belongs to the deployable apps, never to a service module: a library does
+         not choose the database it is deployed against. Its tests, however, do talk to the Postgres
+         container above, so the driver rides along with the container that needs it and reaches
+         every module through this test-scoped artifact - never through a production classpath. -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
