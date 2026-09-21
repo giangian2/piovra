@@ -38,6 +38,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
+    <!-- Spring Boot 4 ships one autoconfiguration module per technology: without this artifact
+         flyway-core sits on the classpath and nothing ever runs it, so Hibernate validates against
+         an empty schema. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-flyway</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
