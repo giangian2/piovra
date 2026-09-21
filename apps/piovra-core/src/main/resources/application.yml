@@ -21,16 +21,11 @@ spring:
     hibernate:
       ddl-auto: validate
   flyway:
-    enabled: true
     # One schema per service module, even while they run in the same process: that is what
-    # makes the future split into separate deployables free.
-    schemas: catalog,inventory,orders,publication,channel_config
-    locations:
-      - classpath:db/migration/catalog
-      - classpath:db/migration/inventory
-      - classpath:db/migration/orders
-      - classpath:db/migration/publication
-      - classpath:db/migration/channel_config
+    # makes the future split into separate deployables free. Each module numbers its migrations
+    # from V1, so they cannot share one Flyway instance: PiovraCoreFlywayConfiguration declares
+    # one per schema instead, and Boot's single autoconfigured instance stays off.
+    enabled: false
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
