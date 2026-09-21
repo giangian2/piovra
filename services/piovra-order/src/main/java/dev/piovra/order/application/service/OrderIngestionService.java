@@ -62,7 +62,7 @@ public class OrderIngestionService implements IngestOrderUseCase, FindOrderUseCa
         if (current.status() == incomingOrder.status()) {
             return current;
         }
-        return updateStatus(current, incomingOrder.status());
+        return updateStatus(current, incomingOrder);
     }
 
     @Override
@@ -91,7 +91,8 @@ public class OrderIngestionService implements IngestOrderUseCase, FindOrderUseCa
         return saved;
     }
 
-    private CanonicalOrder updateStatus(CanonicalOrder current, OrderStatus newStatus) {
+    private CanonicalOrder updateStatus(CanonicalOrder current, CanonicalOrder incoming) {
+        OrderStatus newStatus = incoming.status();
         List<OrderLine> resolved = resolveLines(current.tenantId(), current.lines());
         CanonicalOrder updated = new CanonicalOrder(
                 current.orderId(),
@@ -99,7 +100,10 @@ public class OrderIngestionService implements IngestOrderUseCase, FindOrderUseCa
                 current.channelId(),
                 current.channelOrderId(),
                 newStatus,
-                current.channelStatus(),
+                // The marketplace's own status, taken from the update rather than kept from the
+                // first sighting: it is what diagnosis starts from, and a stale one is worse than
+                // none. Invisible while POST /v1/orders was the only producer.
+                incoming.channelStatus(),
                 current.placedAt(),
                 Instant.now(),
                 current.buyer(),
@@ -113,8 +117,9 @@ public class OrderIngestionService implements IngestOrderUseCase, FindOrderUseCa
         return saved;
     }
 
-    /** Optimistic: there is no feedback loop from inventory back to order-service, so this is set
-     * true as soon as OrderAccepted is queued, not once inventory confirms the movement. */
+    /** {@code stockApplied} stays false: there is no feedback loop from inventory back to
+     * order-service, so nothing here can honestly claim the movement landed. The field is reserved
+     * for when that loop exists (docs/13-database-schema.md, "known gaps"). */
     private void emitAcceptedIfNeeded(CanonicalOrder order) {
         if (!order.inventoryAffectingLines().isEmpty()) {
             outboxWriter.append(OrderAccepted.from(order));

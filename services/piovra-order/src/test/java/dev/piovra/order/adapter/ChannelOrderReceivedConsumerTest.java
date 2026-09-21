@@ -33,6 +33,7 @@ import dev.piovra.model.order.OrderLine;
 import dev.piovra.model.order.OrderStatus;
 import dev.piovra.model.order.OrderTotals;
 import dev.piovra.order.application.port.out.KnownSkuRepository;
+import dev.piovra.order.application.port.out.OrderRepository;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 import dev.piovra.testsupport.PiovraKafkaContainer;
 
@@ -51,6 +52,9 @@ class ChannelOrderReceivedConsumerTest extends PiovraIntegrationTest {
 
     @Autowired
     private KnownSkuRepository knownSkuRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     @Test
     void a_new_order_with_a_known_sku_is_accepted() throws Exception {
@@ -116,6 +120,24 @@ class ChannelOrderReceivedConsumerTest extends PiovraIntegrationTest {
                 assertThat(matches).isEqualTo(2);
             });
         }
+    }
+
+    @Test
+    void a_status_update_also_refreshes_the_marketplace_s_own_status() throws Exception {
+        Sku sku = Sku.of("TEST-" + Ids.newId());
+        knownSkuRepository.ensureExists(TENANT, sku);
+        String channelOrderId = "CH-" + Ids.newId();
+
+        send(rawOrder(channelOrderId, sku, OrderStatus.NEW));
+        send(rawOrder(channelOrderId, sku, OrderStatus.CANCELLED));
+
+        // channelStatus is where diagnosis starts, so a stale one is worse than none. It used to
+        // keep the value from the first sighting for the life of the order.
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(orderRepository
+                        .findByChannelOrderId(TENANT, CHANNEL, channelOrderId)
+                        .orElseThrow()
+                        .channelStatus())
+                .isEqualTo("CANCELLED"));
     }
 
     private void send(CanonicalOrder order) throws Exception {
