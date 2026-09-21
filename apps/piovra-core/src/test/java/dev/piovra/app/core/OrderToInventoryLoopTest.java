@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Ids;
 import dev.piovra.common.Money;
@@ -31,6 +29,8 @@ import dev.piovra.model.order.OrderStatus;
 import dev.piovra.model.order.OrderTotals;
 import dev.piovra.order.application.port.out.KnownSkuRepository;
 import dev.piovra.testsupport.PiovraIntegrationTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Proves the order -&gt; stock loop closes end to end, not just module by module: a {@code
@@ -65,7 +65,9 @@ class OrderToInventoryLoopTest extends PiovraIntegrationTest {
                 10,
                 0,
                 0,
-                stockLevelRepository.lockOrCreate(TENANT, sku).version() + 1));
+                inTransaction(() -> stockLevelRepository.lockOrCreate(TENANT, sku))
+                                .version()
+                        + 1));
 
         OrderLine line = new OrderLine(
                 "line-1", "channel-line-1", sku.value(), null, LineResolution.UNMAPPED, 3, Money.euro("19.90"));
@@ -89,8 +91,9 @@ class OrderToInventoryLoopTest extends PiovraIntegrationTest {
                 .send(Topics.CHANNEL_ORDER_RECEIVED, event.partitionKey(), objectMapper.writeValueAsString(event))
                 .get();
 
-        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(
-                        stockLevelRepository.lockOrCreate(TENANT, sku).onHand())
-                .isEqualTo(7));
+        await().atMost(Duration.ofSeconds(20))
+                .untilAsserted(() -> assertThat(inTransaction(() -> stockLevelRepository.lockOrCreate(TENANT, sku))
+                                .onHand())
+                        .isEqualTo(7));
     }
 }

@@ -5,20 +5,17 @@ import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Ids;
@@ -33,6 +30,9 @@ import dev.piovra.model.order.LineResolution;
 import dev.piovra.model.order.OrderLine;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 import dev.piovra.testsupport.PiovraKafkaContainer;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /** Inert-but-wired path: nothing publishes {@code OrderAccepted} in production yet, but this proves
  * the consumer applies it correctly once something does. */
@@ -50,7 +50,7 @@ class OrderAcceptedConsumerTest extends PiovraIntegrationTest {
     @Test
     void an_order_accepted_message_decrements_stock_and_emits_inventory_changed() throws Exception {
         Sku sku = Sku.of("TEST-" + Ids.newId());
-        StockLevel initial = stockLevelRepository.lockOrCreate(TenantId.DEFAULT, sku);
+        StockLevel initial = inTransaction(() -> stockLevelRepository.lockOrCreate(TenantId.DEFAULT, sku));
         stockLevelRepository.save(new StockLevel(TenantId.DEFAULT, sku, 10, 0, 0, initial.version() + 1));
 
         OrderLine line = new OrderLine(
@@ -70,19 +70,33 @@ class OrderAcceptedConsumerTest extends PiovraIntegrationTest {
                 .get();
 
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(
-                        stockLevelRepository.lockOrCreate(TenantId.DEFAULT, sku).onHand())
+                        inTransaction(() -> stockLevelRepository.lockOrCreate(TenantId.DEFAULT, sku))
+                                .onHand())
                 .isEqualTo(7));
 
         try (KafkaConsumer<String, String> consumer = testConsumer()) {
             consumer.subscribe(List.of(Topics.INVENTORY_CHANGED));
+            // Accumulated across polls, and asserted on the values rather than on a boolean: when
+            // this fails, the report has to show what was actually published.
+            List<String> published = new ArrayList<>();
             await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
-                boolean found = StreamSupport.stream(records.spliterator(), false)
-                        .anyMatch(record -> record.value().contains(sku.value())
-                                && record.value().contains("\"available\":7"));
-                assertThat(found).isTrue();
+                consumer.poll(Duration.ofMillis(500)).forEach(record -> published.add(record.value()));
+                assertThat(published).anyMatch(value -> isTheExpectedInventoryChanged(value, sku));
             });
         }
+    }
+
+    /**
+     * Parsed, not matched as a string: the payload travels through a JSONB column, and Postgres
+     * hands it back normalised - keys reordered, a space after every colon. Only the values are
+     * ours to assert on.
+     */
+    private boolean isTheExpectedInventoryChanged(String value, Sku sku) {
+        JsonNode event = objectMapper.readTree(value);
+        return sku.value().equals(event.path("sku").path("value").asText())
+                && event.path("available").asInt() == 7
+                && event.path("previousAvailable").asInt() == 10
+                && "ORDER".equals(event.path("reason").asText());
     }
 
     private KafkaConsumer<String, String> testConsumer() {

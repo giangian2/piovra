@@ -4,21 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.StreamSupport;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.piovra.common.Ids;
 import dev.piovra.events.CommandPriority;
@@ -36,6 +33,9 @@ import dev.piovra.testsupport.CanonicalProductFixtures;
 import dev.piovra.testsupport.ChannelDefinitionFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 import dev.piovra.testsupport.PiovraKafkaContainer;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The full catalog -&gt; publication loop: a {@code ProductChanged} produces a {@code PENDING}
@@ -74,13 +74,12 @@ class ProductChangedConsumerTest extends PiovraIntegrationTest {
         String commandTopic = Topics.channelCommand(channel.type(), CommandPriority.NORMAL);
         try (KafkaConsumer<String, String> consumer = testConsumer()) {
             consumer.subscribe(List.of(commandTopic));
+            List<String> commands = new ArrayList<>();
             await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
-                boolean found = StreamSupport.stream(records.spliterator(), false)
-                        .anyMatch(
-                                record -> record.value().contains(product.sku().value())
-                                        && record.value().contains("\"quantity\":5"));
-                assertThat(found).isTrue();
+                consumer.poll(Duration.ofMillis(500)).forEach(record -> commands.add(record.value()));
+                assertThat(commands)
+                        .filteredOn(command -> isFor(command, product, channel))
+                        .anyMatch(command -> quantityIn(command) == 5);
             });
         }
     }
@@ -104,12 +103,10 @@ class ProductChangedConsumerTest extends PiovraIntegrationTest {
         String commandTopic = Topics.channelCommand(channel.type(), CommandPriority.NORMAL);
         try (KafkaConsumer<String, String> consumer = testConsumer()) {
             consumer.subscribe(List.of(commandTopic));
+            List<String> commands = new ArrayList<>();
             await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
-                boolean found = StreamSupport.stream(records.spliterator(), false)
-                        .anyMatch(
-                                record -> record.value().contains(product.sku().value()));
-                assertThat(found).isTrue();
+                consumer.poll(Duration.ofMillis(500)).forEach(record -> commands.add(record.value()));
+                assertThat(commands).anyMatch(command -> isFor(command, product, channel));
             });
         }
     }
@@ -130,17 +127,45 @@ class ProductChangedConsumerTest extends PiovraIntegrationTest {
         String commandTopic = Topics.channelCommand(channel.type(), CommandPriority.NORMAL);
         try (KafkaConsumer<String, String> consumer = testConsumer()) {
             consumer.subscribe(List.of(commandTopic));
+            // Accumulated across polls, not counted within a single one: a duplicate that landed in
+            // an earlier poll would otherwise go unnoticed, which is exactly what this test is for.
+            List<String> commands = new ArrayList<>();
             await().pollDelay(Duration.ofSeconds(5))
                     .atMost(Duration.ofSeconds(20))
                     .untilAsserted(() -> {
-                        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
-                        long matches = StreamSupport.stream(records.spliterator(), false)
-                                .filter(record ->
-                                        record.value().contains(product.sku().value()))
-                                .count();
-                        assertThat(matches).isEqualTo(1);
+                        consumer.poll(Duration.ofMillis(500)).forEach(record -> commands.add(record.value()));
+                        assertThat(commands)
+                                .filteredOn(command -> isFor(command, product, channel))
+                                .hasSize(1);
                     });
         }
+    }
+
+    /**
+     * Parsed, not matched as a string: the command travels through the outbox's JSONB column, and
+     * Postgres hands it back normalised - keys reordered, a space after every colon.
+     *
+     * <p>Scoped to the channel as well as the SKU. Every test in this class leaves its channel in
+     * the shared cache, and a product is projected onto every active channel, so counting commands
+     * by SKU alone counts the neighbours' channels too.
+     */
+    private boolean isFor(String command, CanonicalProduct product, ChannelDefinition channel) {
+        JsonNode node = objectMapper.readTree(command);
+        return product.sku().value().equals(node.path("sku").path("value").asText())
+                && channel.channelId()
+                        .value()
+                        .equals(node.path("channelId").path("value").asText());
+    }
+
+    /** The projected quantity lives on the variant, not on the listing: that is where the stock is. */
+    private int quantityIn(String command) {
+        return objectMapper
+                .readTree(command)
+                .path("payload")
+                .path("variants")
+                .path(0)
+                .path("quantity")
+                .asInt(-1);
     }
 
     private void send(ProductChanged event) throws Exception {

@@ -3,6 +3,7 @@ package dev.piovra.catalog.adapter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,8 @@ class ComplianceProfileRepositoryAdapterTest extends PiovraIntegrationTest {
                 new Address("Via Roma 1", "Milano", "20100", "IT"),
                 "compliance@acme.test",
                 null,
-                Instant.now());
+                // Postgres TIMESTAMPTZ keeps microseconds; a nanosecond Instant cannot survive the
+                // round trip, and the record's equals() compares the field exactly.
+                Instant.now().truncatedTo(ChronoUnit.MICROS));
     }
 }
