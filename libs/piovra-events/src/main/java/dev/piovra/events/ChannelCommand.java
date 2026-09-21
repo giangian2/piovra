@@ -1,6 +1,8 @@
 package dev.piovra.events;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,7 +51,10 @@ public record ChannelCommand(
 
     public ChannelCommand {
         changedGroups = changedGroups == null ? Set.of() : Set.copyOf(changedGroups);
-        payload = payload == null ? Map.of() : Map.copyOf(payload);
+        // Defensive copy as everywhere else, but not Map.copyOf: that one throws on a null value,
+        // and a projected listing legitimately has them - an optional attribute the product does
+        // not carry. LinkedHashMap keeps the projection's field order in the published JSON.
+        payload = payload == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(payload));
     }
 
     public ChannelCommand nextAttempt() {
