@@ -389,6 +389,10 @@ used.
 - **Publication**: `GET /v1/listings/{sku}` (every channel) and `GET /v1/listings/{sku}/{channelId}`
   (one channel), on `piovra-publication`, return `ChannelListing` as-is.
 - **Orders**: `GET /v1/orders/{orderId}`, on `piovra-order`, returns `CanonicalOrder` as-is.
+- **Stock**: nothing. `piovra-inventory` exposes only `POST /v1/stock`, which returns the
+  `InventoryChanged` events for the lines it just applied. A stock level is otherwise visible only
+  on `inventory.changed.v1` or in `inventory.stock_level` - a gap worth closing when anything other
+  than a test needs to read it.
 
 Both are the intended way for another app or a CRM to read status and errors without any Kafka
 integration on their side - same `X-Piovra-Tenant` header convention as every other REST endpoint

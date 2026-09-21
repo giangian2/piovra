@@ -28,9 +28,11 @@ The name mirrors the architecture:
 
 ## Status
 
-> ⚠️ Phase: **early development.** The core (catalog + channel-config + publication) runs end to end
-> against Kafka and Postgres, with automated test coverage. Inventory, order, feed parsing and driver
-> bodies are still to come. See [Status of the skeleton](#status-of-the-skeleton).
+> ⚠️ Phase: **early development.** The order loop closes: an order placed on WooCommerce is polled
+> by the connector, deduplicated, resolved against the catalog, and decrements canonical stock,
+> which then fans out towards the other channels. What is still missing is the last leg - no
+> connector consumes `channel.command.*` yet, so nothing is written back to a marketplace - and the
+> whole feed pipeline. See [Status of the skeleton](#status-of-the-skeleton).
 
 ## Documentation index
 
@@ -77,8 +79,8 @@ The name mirrors the architecture:
 
 ## Repository structure
 
-A Maven monorepo, **22 modules** across four levels. The distinction that matters is between
-modules (code boundaries) and deployables (release units): 18 code modules plus 4 deployables.
+A Maven monorepo, **23 modules** across four levels. The distinction that matters is between
+modules (code boundaries) and deployables (release units): 19 code modules plus 4 deployables.
 
 ```
 piovra/
@@ -98,7 +100,8 @@ piovra/
 ├── services/   business modules (JARs, one DB schema each)
 │   ├── piovra-catalog · piovra-inventory · piovra-order
 │   ├── piovra-publication · piovra-channel-config
-│   └── piovra-feed-ingestion · piovra-feed-processor
+│   ├── piovra-feed-ingestion · piovra-feed-processor
+│   └── piovra-woocommerce     connector logic: order polling, cursors, rate limiting
 ├── apps/       the 4 deployables
 │   ├── piovra-core                    catalog+inventory+order+publication+channel-config
 │   ├── piovra-feed                    ingestion+processor
@@ -123,7 +126,7 @@ extracting one is a packaging change, not a refactor.
 
 | Area | Status |
 |---|---|
-| Maven structure, 22 modules, green build on JDK 25 | ✅ |
+| Maven structure, 23 modules, green build on JDK 25 | ✅ |
 | Devcontainer, CI, runtime images (same Java major everywhere) | ✅ |
 | Contracts: canonical model, events, driver SPI | ✅ |
 | `piovra-kafka-support`: JSON (de)serialization, MDC propagation, DLQ error handler | ✅ unit + Testcontainers tests |
@@ -131,16 +134,19 @@ extracting one is a packaging change, not a refactor.
 | `piovra-crosscutting`: `@Idempotent`, `@ChannelCall`, `@Audited` plus aspects; `web` package (correlation filter, global exception handler) | ✅ unit tests |
 | **`channel-config`**: registry, REST API, outbox → `channel.config.v1` | ✅ persistence + outbox + HTTP tests |
 | **`catalog`**: upsert/diff domain logic, REST API, outbox → `catalog.product.changed.v1`, first-noise-filter no-op | ✅ domain + persistence + outbox + HTTP tests |
-| **`publication`**: existing diff engine (`ChannelProjector`/`DiffCalculator`, untouched) wired to real consumers, `channel_listing` persistence, idempotent command emission | ✅ domain + Testcontainers consumer tests, including the "same event twice" case |
-| Diff engine and per-channel projection (`publication` domain) | ✅ 9 tests |
+| **`publication`**: diff engine wired to real consumers, `channel_listing` persistence, idempotent command emission | ✅ domain + Testcontainers consumer tests, including the "same event twice" case |
+| **`inventory`**: movement ledger, stock projection, batch REST API, outbox → `inventory.changed.v1` | ✅ domain + persistence + consumer + HTTP tests |
+| **`order`**: deduplication on `(channel, channelOrderId)`, SKU resolution, status transitions, outbox → `order.accepted.v1` | ✅ domain + persistence + consumer + HTTP tests |
+| **Order acquisition**: WooCommerce polling with a cursor, a cross-replica lease and raw payloads in object storage | ✅ mapper + WireMock + Testcontainers tests |
+| Order → stock loop across modules (`OrderToInventoryLoopTest`) | ✅ end to end on Testcontainers |
 | Engine bootstrap (all 4 apps): Kafka (de)serializers, structured JSON logging, health probes | ✅ |
-| S3-compatible object storage wiring (`feed-ingestion`, `S3Client` + health check) | ✅ |
-| Driver TCK | ✅ complete skeleton |
-| WooCommerce / eBay drivers | 🚧 structure, capabilities and error translation; bodies pending |
-| `inventory` / `order` services | 🚧 empty modules (deferred to a follow-up step) |
+| Driver TCK | ✅ skeleton; not subclassed yet - it asserts upsert behaviour that does not exist |
+| WooCommerce driver | 🚧 orders read; the write path (upsert, inventory, price, end) still pending |
+| eBay driver | 🚧 structure, capabilities and error translation; bodies pending |
+| **Connector command consumer** (`channel.command.*` → marketplace → `channel.result`) | ⬜ the missing last leg: nothing is written back to a store yet |
+| Order webhooks (an accelerator; polling is authoritative) | ⬜ to do |
 | `feed-ingestion` / `feed-processor` business logic (parsing, mapping, S3 upload) | 🚧 not started; only the app skeleton and S3 client are wired |
-| Local Docker environment | ✅ |
-| Connector command/result consumers, order polling | ⬜ to do |
+| Local Docker environment | ✅ incl. a WireMock store over HTTPS and MinIO |
 
 ## Build
 
@@ -217,6 +223,49 @@ curl -X PUT localhost:8080/v1/products/TSHIRT-BASE \
 This is exactly what `ProductChangedConsumerTest` and `ChannelConfigOutboxRelayTest` verify with
 Testcontainers, minus the manual curl — see those tests for the same flow driven end to end
 automatically.
+
+### The order loop, without a real marketplace
+
+WireMock impersonates a WooCommerce store, so the loop can be watched end to end on a laptop. It
+answers over **HTTPS** on 8443, because the driver refuses plain HTTP: the consumer key and secret
+travel in an `Authorization` header.
+
+```bash
+# 0. the stub store already serves one order of 3 pieces of TSHIRT-BASE:
+#    deploy/local/wiremock/mappings/woocommerce-orders.json
+
+# 1. point a channel at it, and give the connector its credentials
+curl -X PUT localhost:8080/v1/channels/woo-local \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"WOOCOMMERCE","marketplaceCode":"https://localhost:8443","enabled":true,
+       "credentialsRef":"vault://x","policy":null,"categoryMapping":{},"settings":{}}'
+
+# 2. the product must exist, or the order line resolves as UNMAPPED and moves no stock
+#    (step 2 above), and give it some stock
+curl -X POST localhost:8080/v1/stock -H 'Content-Type: application/json' \
+  -d '{"batchId":"seed-1","lines":[{"sku":"TSHIRT-BASE","quantity":10}]}'
+
+# 3. start the connector (port 8082) with the store's credentials
+PIOVRA_CONNECTOR_CREDENTIALS_WOO-LOCAL_CONSUMER-KEY=ck_test \
+PIOVRA_CONNECTOR_CREDENTIALS_WOO-LOCAL_CONSUMER-SECRET=cs_test \
+  java -jar apps/piovra-connector-woocommerce/target/*.jar
+
+# 4. within one polling tick (2 minutes), watch the chain on Kafka UI (localhost:8090):
+#      channel.order.received.v1 → order.accepted.v1 → inventory.changed.v1
+#    the last one carries "available": 7, down from 10.
+
+# 5. the order is now canonical and readable:
+curl "localhost:8080/v1/orders/$(psql -qtAX -h localhost -U piovra_core piovra \
+      -c "select id from orders.orders order by updated_at desc limit 1")"
+```
+
+> `inventory` has no read endpoint yet — `POST /v1/stock` returns the resulting `InventoryChanged`
+> for the lines it just applied, but there is no `GET /v1/stock/{sku}`. Until there is, the stock
+> level is visible on `inventory.changed.v1` or straight from `inventory.stock_level`.
+
+Polling every two minutes is the whole latency here. Webhooks would cut it to seconds, and they are
+deliberately not implemented yet: they are an accelerator, and polling has to work as the safety net
+regardless (docs/07 section 2.2).
 
 ## Contributing
 
