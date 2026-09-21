@@ -43,7 +43,7 @@ import dev.piovra.testsupport.PiovraKafkaContainer;
  * {@code DiffCalculator} domain untouched. The second test is docs/12-development-guidelines.md
  * section 6's mandatory case: receiving the same event twice must not double-publish.
  */
-class ProductChangedConsumerIT extends PiovraIntegrationTest {
+class ProductChangedConsumerTest extends PiovraIntegrationTest {
 
     @Autowired
     private KafkaTemplate<Object, Object> kafkaTemplate;

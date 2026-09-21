@@ -24,7 +24,7 @@ import dev.piovra.model.order.OrderTotals;
 import dev.piovra.order.adapter.out.persistence.OrderRepositoryAdapter;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class OrderRepositoryAdapterIT extends PiovraIntegrationTest {
+class OrderRepositoryAdapterTest extends PiovraIntegrationTest {
 
     private static final TenantId TENANT = TenantId.DEFAULT;
     private static final ChannelId CHANNEL = ChannelId.of("test-channel");

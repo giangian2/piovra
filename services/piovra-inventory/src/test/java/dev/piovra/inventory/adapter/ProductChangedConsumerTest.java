@@ -22,7 +22,7 @@ import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.testsupport.CanonicalProductFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class ProductChangedConsumerIT extends PiovraIntegrationTest {
+class ProductChangedConsumerTest extends PiovraIntegrationTest {
 
     @Autowired
     private KafkaTemplate<Object, Object> kafkaTemplate;

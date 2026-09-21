@@ -13,7 +13,7 @@ import dev.piovra.model.channel.ChannelDefinition;
 import dev.piovra.testsupport.ChannelDefinitionFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class ChannelDefinitionRepositoryAdapterIT extends PiovraIntegrationTest {
+class ChannelDefinitionRepositoryAdapterTest extends PiovraIntegrationTest {
 
     @Autowired
     private ChannelDefinitionRepositoryAdapter adapter;

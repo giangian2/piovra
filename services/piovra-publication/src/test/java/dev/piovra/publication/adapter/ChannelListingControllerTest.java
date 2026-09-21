@@ -21,7 +21,7 @@ import dev.piovra.publication.domain.ChannelListing;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ChannelListingControllerIT extends PiovraIntegrationTest {
+class ChannelListingControllerTest extends PiovraIntegrationTest {
 
     @LocalServerPort
     private int port;

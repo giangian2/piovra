@@ -31,7 +31,7 @@ import dev.piovra.order.application.port.out.KnownSkuRepository;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class OrderControllerIT extends PiovraIntegrationTest {
+class OrderControllerTest extends PiovraIntegrationTest {
 
     @LocalServerPort
     private int port;

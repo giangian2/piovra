@@ -21,7 +21,7 @@ import dev.piovra.events.Topics;
 import dev.piovra.publication.application.port.out.InventoryCache;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class InventoryChangedConsumerIT extends PiovraIntegrationTest {
+class InventoryChangedConsumerTest extends PiovraIntegrationTest {
 
     @Autowired
     private KafkaTemplate<Object, Object> kafkaTemplate;

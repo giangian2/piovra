@@ -1,4 +1,4 @@
-package dev.piovra.order.adapter;
+package dev.piovra.inventory.adapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -16,73 +16,73 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.piovra.common.ChannelId;
 import dev.piovra.common.Ids;
 import dev.piovra.common.Money;
 import dev.piovra.common.Sku;
 import dev.piovra.common.TenantId;
+import dev.piovra.events.OrderAccepted;
 import dev.piovra.events.Topics;
-import dev.piovra.model.order.Address;
-import dev.piovra.model.order.Buyer;
-import dev.piovra.model.order.CanonicalOrder;
+import dev.piovra.inventory.adapter.out.persistence.StockLevelRepositoryAdapter;
+import dev.piovra.inventory.domain.model.StockLevel;
 import dev.piovra.model.order.LineResolution;
 import dev.piovra.model.order.OrderLine;
-import dev.piovra.model.order.OrderStatus;
-import dev.piovra.model.order.OrderTotals;
-import dev.piovra.order.application.port.in.IngestOrderUseCase;
-import dev.piovra.order.application.port.out.KnownSkuRepository;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 import dev.piovra.testsupport.PiovraKafkaContainer;
 
-/** Proves the whole loop: an accepted order produces an outbox row, and the relay publishes it as
- * {@code OrderAccepted} on the real (test) Kafka broker - mirrors {@code CatalogOutboxRelayIT}. */
-class OrderOutboxRelayIT extends PiovraIntegrationTest {
-
-    private static final TenantId TENANT = TenantId.DEFAULT;
-    private static final ChannelId CHANNEL = ChannelId.of("test-channel");
+/** Inert-but-wired path: nothing publishes {@code OrderAccepted} in production yet, but this proves
+ * the consumer applies it correctly once something does. */
+class OrderAcceptedConsumerTest extends PiovraIntegrationTest {
 
     @Autowired
-    private IngestOrderUseCase ingestOrderUseCase;
+    private KafkaTemplate<Object, Object> kafkaTemplate;
 
     @Autowired
-    private KnownSkuRepository knownSkuRepository;
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private StockLevelRepositoryAdapter stockLevelRepository;
 
     @Test
-    void an_ingested_order_is_published_as_order_accepted() {
+    void an_order_accepted_message_decrements_stock_and_emits_inventory_changed() throws Exception {
         Sku sku = Sku.of("TEST-" + Ids.newId());
-        knownSkuRepository.ensureExists(TENANT, sku);
+        StockLevel initial = stockLevelRepository.lockOrCreate(TenantId.DEFAULT, sku);
+        stockLevelRepository.save(new StockLevel(TenantId.DEFAULT, sku, 10, 0, 0, initial.version() + 1));
 
-        ingestOrderUseCase.ingest(order(sku), null);
+        OrderLine line = new OrderLine(
+                "line-1", "channel-line-1", sku.value(), sku, LineResolution.MAPPED, 3, Money.euro("19.90"));
+        OrderAccepted event = new OrderAccepted(
+                Ids.newId(),
+                TenantId.DEFAULT,
+                "order-" + Ids.newId(),
+                ChannelId.of("test-channel"),
+                "channel-order-1",
+                List.of(line),
+                false,
+                Instant.now());
+
+        kafkaTemplate
+                .send(Topics.ORDER_ACCEPTED, event.partitionKey(), objectMapper.writeValueAsString(event))
+                .get();
+
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(
+                        stockLevelRepository.lockOrCreate(TenantId.DEFAULT, sku).onHand())
+                .isEqualTo(7));
 
         try (KafkaConsumer<String, String> consumer = testConsumer()) {
-            consumer.subscribe(List.of(Topics.ORDER_ACCEPTED));
+            consumer.subscribe(List.of(Topics.INVENTORY_CHANGED));
             await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
                 boolean found = StreamSupport.stream(records.spliterator(), false)
-                        .anyMatch(record -> record.value().contains(sku.value()));
+                        .anyMatch(record -> record.value().contains(sku.value())
+                                && record.value().contains("\"available\":7"));
                 assertThat(found).isTrue();
             });
         }
-    }
-
-    private static CanonicalOrder order(Sku sku) {
-        OrderLine line = new OrderLine(
-                "line-1", "channel-line-1", sku.value(), null, LineResolution.UNMAPPED, 1, Money.euro("19.90"));
-        return new CanonicalOrder(
-                Ids.newId(),
-                TENANT,
-                CHANNEL,
-                "CH-" + Ids.newId(),
-                OrderStatus.NEW,
-                "processing",
-                Instant.now(),
-                Instant.now(),
-                new Buyer("buyer-1", "Mario Rossi", "mario@test.it"),
-                new Address("Mario Rossi", "Via Roma 1", null, "Milano", "MI", "20100", "IT", null),
-                new OrderTotals(Money.euro("19.90"), Money.euro("0.00"), Money.euro("0.00"), Money.euro("19.90")),
-                List.of(line),
-                false);
     }
 
     private KafkaConsumer<String, String> testConsumer() {

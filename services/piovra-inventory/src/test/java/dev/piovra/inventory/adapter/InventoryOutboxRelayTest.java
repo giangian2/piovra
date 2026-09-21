@@ -29,8 +29,8 @@ import dev.piovra.testsupport.PiovraIntegrationTest;
 import dev.piovra.testsupport.PiovraKafkaContainer;
 
 /** Proves the whole loop: applying a movement produces an outbox row, and the relay publishes it as
- * {@code InventoryChanged} on the real (test) Kafka broker - mirrors {@code CatalogOutboxRelayIT}. */
-class InventoryOutboxRelayIT extends PiovraIntegrationTest {
+ * {@code InventoryChanged} on the real (test) Kafka broker - mirrors {@code CatalogOutboxRelayTest}. */
+class InventoryOutboxRelayTest extends PiovraIntegrationTest {
 
     @Autowired
     private ApplyStockMovementsUseCase applyStockMovementsUseCase;

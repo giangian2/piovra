@@ -14,7 +14,7 @@ import dev.piovra.common.TenantId;
 import dev.piovra.publication.application.port.out.InventoryCache;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class InventoryCacheAdapterIT extends PiovraIntegrationTest {
+class InventoryCacheAdapterTest extends PiovraIntegrationTest {
 
     @Autowired
     private InventoryCache cache;

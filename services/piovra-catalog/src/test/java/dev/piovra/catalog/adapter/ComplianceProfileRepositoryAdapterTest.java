@@ -16,7 +16,7 @@ import dev.piovra.model.compliance.ComplianceProfile;
 import dev.piovra.model.compliance.ComplianceProfileType;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class ComplianceProfileRepositoryAdapterIT extends PiovraIntegrationTest {
+class ComplianceProfileRepositoryAdapterTest extends PiovraIntegrationTest {
 
     private static final TenantId TENANT = TenantId.of("acme");
 

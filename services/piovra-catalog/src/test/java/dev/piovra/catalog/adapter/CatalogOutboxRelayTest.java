@@ -29,7 +29,7 @@ import dev.piovra.testsupport.PiovraKafkaContainer;
  * Proves the whole loop: an upsert produces an outbox row, and the relay publishes it as a
  * {@code ProductChanged} on the real (test) Kafka broker - the exact chain publication will consume.
  */
-class CatalogOutboxRelayIT extends PiovraIntegrationTest {
+class CatalogOutboxRelayTest extends PiovraIntegrationTest {
 
     @Autowired
     private UpsertProductUseCase upsertProductUseCase;

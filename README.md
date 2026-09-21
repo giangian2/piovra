@@ -214,7 +214,7 @@ curl -X PUT localhost:8080/v1/products/TSHIRT-BASE \
 # 3. Resubmit the identical payload: 204, no new event (the "first noise filter")
 ```
 
-This is exactly what `ProductChangedConsumerIT` and `ChannelConfigOutboxRelayIT` verify with
+This is exactly what `ProductChangedConsumerTest` and `ChannelConfigOutboxRelayTest` verify with
 Testcontainers, minus the manual curl — see those tests for the same flow driven end to end
 automatically.
 

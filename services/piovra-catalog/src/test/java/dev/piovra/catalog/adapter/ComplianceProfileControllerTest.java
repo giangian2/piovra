@@ -20,7 +20,7 @@ import dev.piovra.model.compliance.ComplianceProfileType;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ComplianceProfileControllerIT extends PiovraIntegrationTest {
+class ComplianceProfileControllerTest extends PiovraIntegrationTest {
 
     @LocalServerPort
     private int port;

@@ -19,7 +19,7 @@ import dev.piovra.publication.application.port.out.ChannelDefinitionCache;
 import dev.piovra.testsupport.ChannelDefinitionFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class ChannelConfigConsumerIT extends PiovraIntegrationTest {
+class ChannelConfigConsumerTest extends PiovraIntegrationTest {
 
     @Autowired
     private KafkaTemplate<Object, Object> kafkaTemplate;

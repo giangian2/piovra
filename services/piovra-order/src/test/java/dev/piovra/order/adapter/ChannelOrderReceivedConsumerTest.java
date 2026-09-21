@@ -38,7 +38,7 @@ import dev.piovra.order.application.port.out.KnownSkuRepository;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 import dev.piovra.testsupport.PiovraKafkaContainer;
 
-class ChannelOrderReceivedConsumerIT extends PiovraIntegrationTest {
+class ChannelOrderReceivedConsumerTest extends PiovraIntegrationTest {
 
     private static final TenantId TENANT = TenantId.DEFAULT;
     private static final ChannelId CHANNEL = ChannelId.of("test-channel");

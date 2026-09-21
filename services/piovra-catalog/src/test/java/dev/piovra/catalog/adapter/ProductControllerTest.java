@@ -32,7 +32,7 @@ import dev.piovra.testsupport.PiovraIntegrationTest;
  * the other catalog tests (persistence, outbox) actually touch.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ProductControllerIT extends PiovraIntegrationTest {
+class ProductControllerTest extends PiovraIntegrationTest {
 
     @LocalServerPort
     private int port;

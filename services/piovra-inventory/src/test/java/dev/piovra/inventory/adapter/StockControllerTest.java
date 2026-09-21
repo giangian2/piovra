@@ -21,7 +21,7 @@ import dev.piovra.inventory.adapter.in.web.StockSetBatchRequest;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class StockControllerIT extends PiovraIntegrationTest {
+class StockControllerTest extends PiovraIntegrationTest {
 
     @LocalServerPort
     private int port;

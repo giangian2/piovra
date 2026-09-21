@@ -20,9 +20,9 @@ import dev.piovra.model.channel.ChannelDefinition;
 import dev.piovra.testsupport.ChannelDefinitionFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-/** Exercises the real wire format end to end, mirroring catalog's {@code ProductControllerIT}. */
+/** Exercises the real wire format end to end, mirroring catalog's {@code ProductControllerTest}. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ChannelDefinitionControllerIT extends PiovraIntegrationTest {
+class ChannelDefinitionControllerTest extends PiovraIntegrationTest {
 
     @LocalServerPort
     private int port;

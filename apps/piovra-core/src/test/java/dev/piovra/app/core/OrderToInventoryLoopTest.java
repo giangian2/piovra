@@ -38,7 +38,7 @@ import dev.piovra.testsupport.PiovraIntegrationTest;
  * piovra-inventory's stock_level, via {@code OrderAccepted} - exactly the chain
  * docs/07-order-flow.md section 1 describes, now that both ends exist.
  */
-class OrderToInventoryLoopIT extends PiovraIntegrationTest {
+class OrderToInventoryLoopTest extends PiovraIntegrationTest {
 
     private static final TenantId TENANT = TenantId.DEFAULT;
     private static final ChannelId CHANNEL = ChannelId.of("test-channel");

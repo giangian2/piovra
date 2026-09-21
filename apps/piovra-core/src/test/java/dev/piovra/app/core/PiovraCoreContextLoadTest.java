@@ -21,7 +21,7 @@ import dev.piovra.testsupport.PiovraIntegrationTest;
  * bean bug (three unqualified beans of the same type colliding once more than one outbox-writing
  * module shares a context) before it shipped.
  */
-class PiovraCoreContextLoadIT extends PiovraIntegrationTest {
+class PiovraCoreContextLoadTest extends PiovraIntegrationTest {
 
     @Autowired
     private ApplicationContext context;

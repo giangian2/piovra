@@ -27,7 +27,7 @@ import dev.piovra.testsupport.PiovraKafkaContainer;
  * Proves the outbox actually relays: a registration produces a row in {@code outbox_event}, and the
  * relay's scheduled tick publishes it to the real (test) Kafka broker.
  */
-class ChannelConfigOutboxRelayIT extends PiovraIntegrationTest {
+class ChannelConfigOutboxRelayTest extends PiovraIntegrationTest {
 
     @Autowired
     private RegisterChannelUseCase registerChannelUseCase;

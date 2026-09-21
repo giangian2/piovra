@@ -31,7 +31,7 @@ import dev.piovra.testsupport.PiovraIntegrationTest;
 
 /** Closes the loop docs/06-publish-flow.md section 7 describes: before ChannelResultHandler existed,
  * a listing stayed PENDING forever regardless of what the driver actually reported. */
-class ChannelResultConsumerIT extends PiovraIntegrationTest {
+class ChannelResultConsumerTest extends PiovraIntegrationTest {
 
     private static final TenantId TENANT = TenantId.DEFAULT;
     private static final ChannelId CHANNEL = ChannelId.of("test-channel");

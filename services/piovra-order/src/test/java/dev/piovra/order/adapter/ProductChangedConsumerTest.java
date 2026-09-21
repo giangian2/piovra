@@ -20,7 +20,7 @@ import dev.piovra.order.application.port.out.KnownSkuRepository;
 import dev.piovra.testsupport.CanonicalProductFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class ProductChangedConsumerIT extends PiovraIntegrationTest {
+class ProductChangedConsumerTest extends PiovraIntegrationTest {
 
     @Autowired
     private KafkaTemplate<Object, Object> kafkaTemplate;

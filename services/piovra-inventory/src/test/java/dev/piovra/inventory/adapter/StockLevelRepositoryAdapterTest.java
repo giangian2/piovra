@@ -12,7 +12,7 @@ import dev.piovra.inventory.adapter.out.persistence.StockLevelRepositoryAdapter;
 import dev.piovra.inventory.domain.model.StockLevel;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class StockLevelRepositoryAdapterIT extends PiovraIntegrationTest {
+class StockLevelRepositoryAdapterTest extends PiovraIntegrationTest {
 
     @Autowired
     private StockLevelRepositoryAdapter adapter;

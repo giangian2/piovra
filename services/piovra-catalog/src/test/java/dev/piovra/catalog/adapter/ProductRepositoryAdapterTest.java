@@ -14,7 +14,7 @@ import dev.piovra.model.product.CanonicalProduct;
 import dev.piovra.testsupport.CanonicalProductFixtures;
 import dev.piovra.testsupport.PiovraIntegrationTest;
 
-class ProductRepositoryAdapterIT extends PiovraIntegrationTest {
+class ProductRepositoryAdapterTest extends PiovraIntegrationTest {
 
     @Autowired
     private ProductRepositoryAdapter adapter;
