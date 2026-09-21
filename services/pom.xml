@@ -19,5 +19,6 @@
     <module>piovra-channel-config</module>
     <module>piovra-feed-ingestion</module>
     <module>piovra-feed-processor</module>
+    <module>piovra-woocommerce</module>
   </modules>
 </project>

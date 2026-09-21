@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: piovra-woocommerce-test
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    schemas: connector_woocommerce
+    locations:
+      - classpath:db/migration/connector_woocommerce
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+    consumer:
+      group-id: piovra-woocommerce-test
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: manual
+
+piovra:
+  connector:
+    channel-type: WOOCOMMERCE
+    instance-id: test
+    polling:
+      # Never fires on its own during a test: the tests drive OrderPollingService directly.
+      orders: PT1H
+      overlap: PT5M
+      lease: PT5M
+      page-size: 2
+      # One page per tick: it makes the mid-scan state observable in the tests.
+      max-pages-per-tick: 1
+    storage:
+      # Overridden by @DynamicPropertySource in the tests that actually talk to MinIO; here only so
+      # the S3Client bean can be built in the contexts that never use it.
+      endpoint: http://localhost:9000
+      bucket: piovra-raw-payloads
+      region: us-east-1
+      access-key: piovra
+      secret-key: piovra123

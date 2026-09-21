@@ -89,6 +89,7 @@
       <dependency><groupId>dev.piovra</groupId><artifactId>piovra-channel-config</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.piovra</groupId><artifactId>piovra-feed-ingestion</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.piovra</groupId><artifactId>piovra-feed-processor</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.piovra</groupId><artifactId>piovra-woocommerce</artifactId><version>${project.version}</version></dependency>
 
       <!-- third parties not covered by the BOMs -->
       <dependency>
