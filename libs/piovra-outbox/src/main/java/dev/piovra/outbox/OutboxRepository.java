@@ -6,12 +6,18 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.query.Param;
 
 /**
  * Every module's concrete outbox repository extends this with its own entity type, e.g.
  * {@code interface CatalogOutboxRepository extends OutboxRepository<CatalogOutboxEvent> {}}.
+ *
+ * <p>{@code @NoRepositoryBean} because {@code OutboxEntity} is a {@code @MappedSuperclass}: without
+ * it Spring Data builds a bean for this interface too, and {@code #entityName} resolves to a type
+ * Hibernate has never mapped ("Could not resolve root entity 'OutboxEntity'").
  */
+@NoRepositoryBean
 public interface OutboxRepository<T extends OutboxEntity> extends JpaRepository<T, String> {
 
     /**
