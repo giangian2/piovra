@@ -19,9 +19,6 @@ spring:
     schemas: connector_woocommerce
     locations:
       - classpath:db/migration/connector_woocommerce
-  data:
-    redis:
-      url: ${REDIS_URL:redis://localhost:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     producer:
@@ -50,15 +47,40 @@ spring:
 piovra:
   connector:
     channel-type: WOOCOMMERCE
-    # The bucket is distributed in Redis: it applies cluster-wide, not per replica.
+    # Who holds a poll lease. Two replicas of the same image must not claim to be each other.
+    instance-id: ${HOSTNAME:local}
+    # In process for now, one bucket per account. A cluster-wide bucket in Redis only starts to
+    # matter once the outbound write path competes for the same quota.
     rate-limit:
       requests-per-second: 8
       burst: 20
     polling:
       orders: PT2M
-      # Sliding window with overlap: absorbs the marketplace's visibility lag.
+      # Sliding window with overlap: absorbs the marketplace's visibility lag. The duplicates it
+      # produces die on the order service's UNIQUE (channel_id, channel_order_id).
       overlap: PT5M
+      # How long one replica may hold a channel. Well above a full multi-page scan, and renewed on
+      # every committed page; if the process dies it expires on its own.
+      lease: PT5M
+      page-size: 100
+      # Stops one very stale channel from starving the others inside a tick.
+      max-pages-per-tick: 20
       reconcile: PT6H
+    storage:
+      # The raw marketplace payload contains personal data: it is archived here and only its URI
+      # travels on Kafka (docs/07-order-flow.md).
+      endpoint: ${S3_ENDPOINT:http://localhost:9000}
+      bucket: ${S3_BUCKET:piovra-raw-payloads}
+      region: ${S3_REGION:us-east-1}
+      access-key: ${S3_ACCESS_KEY:piovra}
+      secret-key: ${S3_SECRET_KEY:piovra123}
+    # Stand-in for Vault, which ChannelDefinition.credentialsRef already points at and which is not
+    # in the stack yet (docs/08-marketplace-drivers.md section 3.3). One entry per channelId:
+    # credentials:
+    #   woo-local:
+    #     consumer-key: ck_...
+    #     consumer-secret: cs_...
+    credentials: {}
 
 resilience4j:
   circuitbreaker:

@@ -13,9 +13,10 @@
   <description>Deployable: WooCommerce driver host.</description>
 
   <dependencies>
+    <!-- The connector logic; the driver arrives with it. -->
     <dependency>
       <groupId>dev.piovra</groupId>
-      <artifactId>piovra-driver-woocommerce</artifactId>
+      <artifactId>piovra-woocommerce</artifactId>
     </dependency>
     <dependency>
       <groupId>dev.piovra</groupId>
@@ -28,10 +29,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-redis</artifactId>
     </dependency>
     <!-- polling cursors and the table of already-executed commandIds -->
     <dependency>
@@ -65,6 +62,11 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.piovra</groupId>
+      <artifactId>piovra-test-support</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
