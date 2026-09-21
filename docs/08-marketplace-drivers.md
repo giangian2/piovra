@@ -12,6 +12,37 @@ Every driver is **both**:
 - a **service** (`connector-<x>`) hosting the library, the Kafka consumers, the polling scheduler and
   the rate limiter.
 
+## 1.1 Channel identity
+
+Many marketplaces are themselves multi-site or multi-account: eBay alone has separate marketplaces
+per country (`EBAY_IT`, `EBAY_US`, `EBAY_DE`, ...), and a seller may run several stores on the same
+platform. The model splits this into three independent concerns, all on `ChannelDefinition`
+(`piovra-model`, see [03](03-data-model.md) / [13](13-database-schema.md)):
+
+- **`ChannelType`** (`EBAY`, `WOOCOMMERCE`, ...) — picks **which driver module** handles the channel.
+  One value covers every eBay site: there is exactly one `EbayDriver`.
+- **`ChannelId`** — identifies **one account/store**, not a marketplace. Per its own Javadoc: *"`ebay-it-main`
+  and `ebay-de-outlet` are distinct channels of the same type."* `ebay_it` and `ebay_us` are simply two
+  separate `ChannelDefinition` rows, both `type = EBAY`, each with its own `channelId`, its own
+  `credentialsRef` (a separate OAuth grant in Vault per account/site), its own `ChannelPolicy` (stock
+  buffer, price markup, etc. legitimately differ by country) and its own `categoryMapping`.
+- **`marketplaceCode`** — the driver-specific parameter that says *which site inside the account* to
+  hit. On eBay this becomes the `X-EBAY-C-MARKETPLACE-ID` header value (`EBAY_IT`, `EBAY_US`, ...,
+  planned for phase 3); on WooCommerce it is already used today as the store's base URL
+  (`WooCommerceApiClient`).
+
+`publication-service` never special-cases any of this: it reads its local `ChannelDefinitionCache`
+(see [02](02-services.md#local-caches-the-general-pattern)), iterates every enabled channel for the
+tenant, and fans a decision out to each one independently through `ChannelContext`. A driver instance
+is stateless and handles all accounts of its type; per-account state (tokens, rate-limit counters)
+lives in the connector, keyed by `channelId`.
+
+> **Implementation status.** `WooCommerceDriver.fetchOrders`/`fetchOrder` are implemented and
+> exercised against WireMock; the outbound write path (`upsertListing`, `updateInventory`,
+> `updatePrice`, `endListing`, `fetchListings`) is still a skeleton, and `EbayDriver` is a skeleton
+> throughout. The driver TCK is therefore not subclassed yet: it asserts upsert behaviour that does
+> not exist, and it lands with the write slice.
+
 ## 2. The SPI
 
 Module `piovra-driver-spi`, with no dependency on Spring or Kafka: interfaces and canonical DTOs

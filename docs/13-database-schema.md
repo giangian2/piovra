@@ -267,21 +267,82 @@ erDiagram
   directly. `LineResolution.AMBIGUOUS`/`EXTERNAL` exist on the domain model but nothing produces
   them yet - see section 8.
 
-## 6. The outbox table (repeated per schema, not shared)
+## 6. `connector_woocommerce` schema
+
+The first schema that belongs to a **connector** rather than to a core service. It is a separate
+deployable with its own datasource, so it never shares a transaction with anything above.
+
+```mermaid
+erDiagram
+    channel_definition_cache {
+        uuid id PK
+        text tenant_id
+        text channel_id
+        text type "EBAY | WOOCOMMERCE - denormalized out of the payload so the poller can filter"
+        boolean enabled
+        jsonb payload "full ChannelDefinition"
+        timestamptz updated_at
+    }
+    poll_cursor {
+        text tenant_id PK
+        text channel_id PK
+        text poll_kind PK "ORDERS today; LISTINGS when reconciliation lands"
+        timestamptz cursor_at "high-water mark on the marketplace's modification timestamp"
+        text page_cursor "nullable: the driver's own token while a scan is mid-flight"
+        timestamptz leased_until "nullable: NULL means free"
+        text leased_by "nullable: which replica holds it"
+        timestamptz last_success_at "nullable"
+        text last_error "nullable"
+        int consecutive_failures
+        timestamptz updated_at
+    }
+    outbox_event {
+        text id PK
+        text partition_key
+        text topic
+        text event_type
+        jsonb payload
+        jsonb headers
+        text status
+        timestamptz created_at
+        timestamptz published_at "nullable"
+        int attempts
+        text last_error "nullable"
+        timestamptz next_retry_at "nullable"
+    }
+```
+
+- `channel_definition_cache`: same pattern and same shape as `publication.channel_definition_cache`,
+  fed by the connector's own `ChannelConfigConsumer` on the compacted `channel.config.v1`. The
+  connector replays the whole topic and keeps every channel, but only acts on its own `type`.
+- `poll_cursor`: **the cursor and the cross-replica lease in one row**, because the row must exist
+  anyway to persist the cursor. `acquire` is a `SELECT ... FOR UPDATE SKIP LOCKED` inside a very
+  short transaction - which settles the instantaneous race between replicas - followed by setting
+  `leased_until`, the *logical* lease that outlives that transaction and covers the whole HTTP round
+  trip. A transaction must never stay open across a marketplace call (docs/12 section 5.4), and a
+  replica that dies mid-poll releases the channel by expiry rather than by cleanup.
+- `cursor_at` only advances when a scan reaches its end; while a scan is in flight only `page_cursor`
+  moves. A crash therefore resumes mid-scan instead of skipping what it had not read.
+- The orders a page produced and the `cursor_at` that says they were read commit in **one**
+  transaction (`OrderPageCommitter`). The other order - cursor first, orders after - would lose
+  orders permanently, because a marketplace does not re-offer what has fallen out of the window.
+
+## 7. The outbox table (repeated per schema, not shared)
 
 Every schema that writes to Kafka has its own `outbox_event` table (`catalog`, `channel_config`,
-`inventory`, `publication`, `orders`). Deliberately **not** a single shared table: each module's
-outbox lives in its own schema so "a module touches only its own schema" holds at the Postgres
-grant level, not just by convention (`OutboxEntity`'s own javadoc, `docs/12` section 5.5). All five
-are structurally identical; see `libs/piovra-outbox/src/main/java/dev/piovra/outbox/OutboxEntity.java`
+`inventory`, `publication`, `orders`, `connector_woocommerce`). Deliberately **not** a single shared
+table: each module's outbox lives in its own schema so "a module touches only its own schema" holds
+at the Postgres grant level, not just by convention (`OutboxEntity`'s own javadoc, `docs/12` section
+5.5). All six are structurally identical; see `libs/piovra-outbox/src/main/java/dev/piovra/outbox/OutboxEntity.java`
 for the shared shape and `OutboxRelay`/`BackoffCalculator` for how `next_retry_at` and `FAILED` are
 used.
 
-## 7. Cross-schema logical relationships (no FK, kept in sync via Kafka)
+## 8. Cross-schema logical relationships (no FK, kept in sync via Kafka)
 
 | From | To | Kept in sync by |
 |---|---|---|
 | `publication.channel_definition_cache` | `channel_config.channel_definition` | `ChannelConfigConsumer` consuming `channel.config.v1` |
+| `connector_woocommerce.channel_definition_cache` | `channel_config.channel_definition` | the connector's own `ChannelConfigConsumer`, same topic - and the row that seeds its `poll_cursor` |
 | `publication.inventory_cache` | `inventory.stock_level.available` | `InventoryChangedConsumer` consuming `inventory.changed.v1` |
 | `publication.channel_listing` | `catalog.products` (via `tenant_id, sku`) | `ProductChangedConsumer` consuming `catalog.product.changed` |
 | `inventory.stock_level` | `catalog.products` (via `tenant_id, sku`) | `ProductChangedConsumer` (inventory's own) - ensures a zeroed row exists per known SKU |
@@ -289,7 +350,7 @@ used.
 | `catalog.products.payload.manufacturerProfileId` / `.responsiblePersonProfileId` | `catalog.compliance_profile.id` | validated in-process at write time (`ProductUpsertService`), same schema so a real FK would be possible but the product itself is JSONB |
 | `inventory.stock_movement` (`reason=ORDER`/`RETURN`) | `orders.orders` (via `tenant_id, orderId`) | `piovra-order` publishing `order.accepted`, consumed by `OrderAcceptedHandler` in piovra-inventory |
 
-## 8. Known gaps as of this writing
+## 9. Known gaps as of this writing
 
 - `channel_listing.published_snapshot` and `.snapshot_hash` exist in the table (per the original
   `docs/03-data-model.md` design) but are **not yet populated** - no reconciliation job exists yet
@@ -304,9 +365,11 @@ used.
   of "a row in sync_errors" for `PERMANENT_ERROR`.
 - No admin/requeue tooling for a listing stuck in `ERROR` - same deliberate scope cut as the
   outbox's own `FAILED` state (section 6): inspectable via SQL or `GET /v1/listings/{sku}` for now.
-- No real driver (`fetchOrders`/`fetchOrder`, polling or webhook) publishes `channel.order.received`
-  yet - `ChannelOrderReceivedConsumer` is inert until eBay/WooCommerce drivers exist (phase 3). The
-  only way orders enter the system today is `POST /v1/orders` (manual/ops).
+- WooCommerce now publishes `channel.order.received` by polling (`WooCommerceDriver.fetchOrders` +
+  `OrderPollScheduler`), so `ChannelOrderReceivedConsumer` is no longer inert. Still missing on that
+  side: the **webhook** accelerator (polling is authoritative either way, docs/07 section 2.2), the
+  eBay driver, and the reconciliation poll that `poll_cursor.poll_kind = LISTINGS` already has room
+  for. `POST /v1/orders` remains as the manual/ops path.
 - SKU resolution in `OrderIngestionService` only ever produces `MAPPED`/`UNMAPPED`: `AMBIGUOUS`
   would need resolving against `channel_listing.external_variant_ids`, data no real driver produces
   yet either (docs/07-order-flow.md section 3). `EXTERNAL` (sold on a channel but not managed by
@@ -314,13 +377,14 @@ used.
 - No proactive retroactive-resolution trigger for `UNMAPPED` lines: a line is only re-resolved when
   the *same order* later gets a status update. A `ProductChanged` arriving for a previously-unknown
   SKU does not by itself go back and fix already-ingested `UNMAPPED` lines.
-- `orders.stockApplied` is set optimistically (`true` as soon as `OrderAccepted` is queued on the
-  outbox) - there is no feedback loop from `piovra-inventory` back to `piovra-order` confirming the
-  movement actually landed.
+- `orders.stockApplied` is **never set to true**: there is no feedback loop from `piovra-inventory`
+  back to `piovra-order` confirming the movement landed, so nothing could honestly claim it. The
+  field is reserved for when that loop exists. (Three comments used to describe it as set
+  optimistically; the code never did.)
 - No periodic reconciliation job (docs/07-order-flow.md section 4.4, docs/11-roadmap.md Phase 2) -
   meaningless without a real driver to reconcile against.
 
-## 9. Reading status externally
+## 10. Reading status externally
 
 - **Publication**: `GET /v1/listings/{sku}` (every channel) and `GET /v1/listings/{sku}/{channelId}`
   (one channel), on `piovra-publication`, return `ChannelListing` as-is.

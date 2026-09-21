@@ -52,6 +52,19 @@ Adaptive interval: 1–2 minutes at peak, 5–10 minutes overnight. If polling h
 N intervals, an alert fires — this is a dangerous silent failure: no errors, orders simply stop
 arriving.
 
+**One replica per channel.** The cursor lives in `connector_woocommerce.poll_cursor`, and the same
+row carries the lease: `SELECT ... FOR UPDATE SKIP LOCKED` settles the instantaneous race between
+replicas, and a `leased_until` column - which outlives that very short transaction - covers the
+whole HTTP round trip, because a transaction must never stay open across a marketplace call
+(docs/12 section 5.4). No ShedLock, and no "poll requested" topic: Kafka here carries facts, and the
+producer and consumer of such a message would be the same process. A replica that dies mid-poll
+releases the channel by expiry.
+
+**The cursor and the orders commit together.** One transaction writes the page's outbox rows and
+moves the cursor. The reverse order would lose orders for good: a marketplace does not re-offer what
+has fallen out of the window. Committing the orders without moving the cursor merely re-reads a
+page, and the duplicates die on `UNIQUE (channel_id, channel_order_id)`.
+
 ### 2.2 Webhooks (where available)
 WooCommerce exposes `order.created`/`order.updated` webhooks. We use them as an **accelerator**,
 never as the only source: a webhook is a *hint* that triggers an immediate order fetch over the API.
